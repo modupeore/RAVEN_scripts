@@ -1,0 +1,7 @@
+#!/bin/bash
+OUTPUT=`date +%Y_%m_%d_%T`
+
+INPUTS="/home/modupe/DATA/sequences/LMH/CONTROL"
+RESULTS="/home/modupe/VARIANTS_results/LMH-CONTROL"
+
+perl /home/modupe/SCRIPTS/VARIANT_analysis/SNPanalysisPipeline.pl -1 $INPUTS -2 $RESULTS 1>/home/modupe/control-$OUTPUT.log 2>/home/modupe/control-$OUTPUT.err

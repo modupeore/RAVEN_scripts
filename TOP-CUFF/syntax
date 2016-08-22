@@ -1,0 +1,2 @@
+time perl top-cuff_analysis.pl  -1 /home/modupe/ -2 24 -3 /home/rvdavis/iGenomes/Gallus_gallus/NCBI/build3.1/Annotation/Genes/genes.gtf -4 /home/rvdavis/iGenomes/Gallus_gallus/NCBI/build3.1/Sequence/Bowtie2Index/genome -5 finale
+
