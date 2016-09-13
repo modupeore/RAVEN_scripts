@@ -1,11 +1,18 @@
 #!/usr/bin/perl
+use strict;
 use File::Basename;
 
 #OBJECTIVE
-#continuation of tabulationSNPS-2.pl
-print "\n\tFrequency of annotations called from Tabulated file\n";
+my $usage="$0
+\t<Tab-delimited file>
+\t<Number of column to be sorted>
+";
 
-my $input = $ARGV[0];
+@ARGV==2 or die $usage;
+my $filen = $ARGV[0];
+my $column = $ARGV[1]-1;
+print "\n\tFrequency of annotations called from Tabulated file\n";
+my $input = $filen;
 my $i= 0;
 unless(open(FILE,$input)){
 	print "File \'$input\' doesn't exist\n";
@@ -18,18 +25,18 @@ close (FILE);
 my $count = 0;
 my %Hashdetails;
 foreach my $chr (@file){
-	if ($chr =~ /^\d/){
+	unless ($chr =~ /^\s/){
 		my @chrdetails = split('\t', $chr);
-		my $chrIwant = $chrdetails[5];
+		my $chrIwant = $chrdetails[$column];
 		my @morechrsplit = split('\(', $chrIwant);
 		$Hashdetails{$morechrsplit[0]} = 0;
 	}
 }
 
 foreach my $newcount (@file){
-        if ($newcount =~ /^\d/){
+        unless ($newcount =~ /^\s/){
                 my @details = split('\t', $newcount);
-                my $chragain = $details[5];
+                my $chragain = $details[$column];
                 my @morechr = split('\(', $chragain);
                 $Hashdetails{$morechr[0]} ++; $count++;
 		#print $count++."\t$details[0]\t$details[1]\t\t$morechr[0]\t$Hashdetails{$morechr[0]}\n";
