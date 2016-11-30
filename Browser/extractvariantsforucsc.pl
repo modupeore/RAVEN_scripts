@@ -2,13 +2,18 @@
 use strict;
 use DBI;
 use lib '/home/modupe/SCRIPTS/SUB';
+use passw;
 use routine;
 
+#This is to extract variants and all the pertinent information into a txt file based on the Chicken line
+#Output is stored in the folder specified
+
 # DATABASE ATTRIBUTES
-my $basepath = "/home/modupe/public_html/DBoutput";
+my $basepath = $ARGV[0]; 
+#"/home/modupe/public_html/DBoutput";
 my $statusfile = "$basepath/mystatus.txt";
 
-open(STATUS,">>$statusfile"); close (STATUS);
+open(STATUS,">>$statusfile") or die "$basepath does not exist\n"; close (STATUS);
 # - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 # - - - - - - - - - - - - G L O B A L  V A R I A B L E S- - - - - - - - - - - - - -
 # - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -

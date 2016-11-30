@@ -2,6 +2,7 @@
 use strict;
 use File::Basename;
 
+#This is convert the extracted tab-delimited text file into a vcf file to be visualized on the genome browser
 #VARIABLES
 my (%GT, %TISSUE, %REF, %ALT, %QUAL, %CSQ, %DBSNP);
 my (%ODACSQ,%number);
@@ -228,15 +229,24 @@ sub SORTER {
     foreach my $position (sort {$a<=> $b} keys %{$subgt{$chrom}}) {
       foreach my $ref (sort {$a<=> $b} keys %{$subgt{$chrom}{$position}}) {
         if ( (exists $subgt{$chrom}{$position}{$ref}{'0/1'}) && (exists $subgt{$chrom}{$position}{$ref}{'1/2'}) ){
-          if ( $subgt{$chrom}{$position}{$ref}{'0/1'} > $subgt{$chrom}{$position}{$ref}{'1/2'} ) {
+          print "yes\t", $chrom,"\t",$position,"\t";
+	  if ( $subgt{$chrom}{$position}{$ref}{'0/1'} > $subgt{$chrom}{$position}{$ref}{'1/2'} ) {
+            print $subgt{$chrom}{$position}{$ref}{'0/1'},"\t0%1\t";
+	    $subgt{$chrom}{$position}{$ref}{'0/1'} =  $subgt{$chrom}{$position}{$ref}{'0/1'} + $subgt{$chrom}{$position}{$ref}{'1/2'};
+            print $subgt{$chrom}{$position}{$ref}{'0/1'},"\n";
+	  }
+          elsif ( $subgt{$chrom}{$position}{$ref}{'0/1'} < $subgt{$chrom}{$position}{$ref}{'1/2'} ) {
+            print $subgt{$chrom}{$position}{$ref}{'1/2'},"\t1%2\t";
+	    $subgt{$chrom}{$position}{$ref}{'1/2'} =  $subgt{$chrom}{$position}{$ref}{'0/1'} + $subgt{$chrom}{$position}{$ref}{'1/2'};
+            print $subgt{$chrom}{$position}{$ref}{'1/2'},"\n";
+	  }
+          elsif ( $subgt{$chrom}{$position}{$ref}{'0/1'} == $subgt{$chrom}{$position}{$ref}{'1/2'} ) {
+            print $subgt{$chrom}{$position}{$ref}{'0/1'},"\t0%1=\t";
             $subgt{$chrom}{$position}{$ref}{'0/1'} =  $subgt{$chrom}{$position}{$ref}{'0/1'} + $subgt{$chrom}{$position}{$ref}{'1/2'};
+            print $subgt{$chrom}{$position}{$ref}{'0/1'},"\n";
+		#$subgt{$chrom}{$position}{$ref}{'0/1'} =  $subgt{$chrom}{$position}{$ref}{'0/1'} + $subgt{$chrom}{$position}{$ref}{'1/2'};
           }
-          if ( $subgt{$chrom}{$position}{$ref}{'0/1'} < $subgt{$chrom}{$position}{$ref}{'1/2'} ) {
-            $subgt{$chrom}{$position}{$ref}{'1/2'} =  $subgt{$chrom}{$position}{$ref}{'0/1'} + $subgt{$chrom}{$position}{$ref}{'1/2'};
-          }
-          if ( $subgt{$chrom}{$position}{$ref}{'0/1'} == $subgt{$chrom}{$position}{$ref}{'1/2'} ) {
-            $subgt{$chrom}{$position}{$ref}{'0/1'} =  $subgt{$chrom}{$position}{$ref}{'0/1'} + $subgt{$chrom}{$position}{$ref}{'1/2'};
-          }
+	  else{die "something is wrong";}
         }
         foreach my $geno (sort {$a <=> $b} keys %{$subgt{$chrom}{$position}{$ref}}){
           $odagt{$chrom}{$position}{$ref}{$subgt{$chrom}{$position}{$ref}{$geno}} = $geno;
