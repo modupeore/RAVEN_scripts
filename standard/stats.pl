@@ -1,5 +1,5 @@
 #!/usr/bin/perl
-#table of the different output
+#create table of the different output for the variants of the different lines
 $newdir = $ARGV[0]; %NEWKEY = ();
 opendir(DIR, $newdir);
 my @Directory = readdir(DIR); close(DIR);
