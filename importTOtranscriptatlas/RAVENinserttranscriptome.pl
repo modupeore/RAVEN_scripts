@@ -469,26 +469,38 @@ sub VARIANTS{
   
   #VARIANT ANALYSIS
   #PICARD
-  `java -jar $PICARDDIR SortSam INPUT=$bamfile OUTPUT=$Mfolder/$libraryNO.bam SO=coordinate`;
-        
-  #ADDREADGROUPS
-  my $addreadgroup = "java -jar $PICARDDIR AddOrReplaceReadGroups INPUT=$Mfolder/$libraryNO.bam OUTPUT=$Mfolder/$libraryNO"."_add.bam SO=coordinate RGID=LAbel RGLB=Label RGPL=illumina RGPU=Label RGSM=Label";
-  `$addreadgroup`;
+  my $filename = "$Mfolder/$libraryNO"."_DP5.vcf";
+  unless (-e $filename) {
+	$filename = "$Mfolder/$libraryNO".".bam";
+	unless (-e $filename){
+		`java -jar $PICARDDIR SortSam INPUT=$bamfile OUTPUT=$filename SO=coordinate`;
+  	}else { print "$filename exists\n"; }
   
-  #MARKDUPLICATES
-  my $markduplicates = "java -jar $PICARDDIR MarkDuplicates INPUT=$Mfolder/".$libraryNO."_add.bam OUTPUT=$Mfolder/".$libraryNO."_mdup.bam M=$Mfolder/".$libraryNO."_mdup.metrics CREATE_INDEX=true";
-  `$markduplicates`;
+	#ADDREADGROUPS
+	$filename = "$Mfolder/$libraryNO"."_add.bam";
+  	unless (-e "$filename"){
+		my $addreadgroup = "java -jar $PICARDDIR AddOrReplaceReadGroups INPUT=$Mfolder/$libraryNO".".bam OUTPUT=$filename SO=coordinate RGID=LAbel RGLB=Label RGPL=illumina RGPU=Label RGSM=Label";
+  		`$addreadgroup`;
+  	}else { print "$Mfolder/$libraryNO"."_add.bam exists\n "; }
+  	#MARKDUPLICATES
+  	unless (-e "$Mfolder/".$libraryNO."_mdup.bam" ) {
+		my $markduplicates = "java -jar $PICARDDIR MarkDuplicates INPUT=$Mfolder/".$libraryNO."_add.bam OUTPUT=$Mfolder/".$libraryNO."_mdup.bam M=$Mfolder/".$libraryNO."_mdup.metrics CREATE_INDEX=true";
+  		`$markduplicates`;
+  	} else { print "$Mfolder/$libraryNO"."_mdup.bam exists\n"; }
   
-  #SPLIT&TRIM
-  my $splittrim = "java -jar $GATKDIR -T SplitNCigarReads -R $REF -I $Mfolder/".$libraryNO."_mdup.bam -o $Mfolder/".$libraryNO."_split.bam -rf ReassignOneMappingQuality -RMQF 255 -RMQT 60 --filter_reads_with_N_cigar";
-  `$splittrim`;
+	#SPLIT&TRIM
+  	unless (-e "$Mfolder/".$libraryNO."_split.bam" ) {  
+		my $splittrim = "java -jar $GATKDIR -T SplitNCigarReads -R $REF -I $Mfolder/".$libraryNO."_mdup.bam -o $Mfolder/".$libraryNO."_split.bam -rf ReassignOneMappingQuality -RMQF 255 -RMQT 60 --filter_reads_with_N_cigar";
+  		`$splittrim`;
+  	} else { print "$Mfolder/$libraryNO"."_split.bam exists \n"; }
   
-  #GATK
-  my $gatk = "java -jar $GATKDIR -T HaplotypeCaller -R $REF -I $Mfolder/".$libraryNO."_split.bam -o $Mfolder/$libraryNO.vcf";
-  `$gatk`;
+	#GATK
+  	my $gatk = "java -jar $GATKDIR -T HaplotypeCaller -R $REF -I $Mfolder/".$libraryNO."_split.bam -o $Mfolder/$libraryNO.vcf";
+  	`$gatk`;
   
-  #perl to select DP > 5 & get header information
-  FILTERING($Mfolder, "$Mfolder/$libraryNO.vcf");
+  	#perl to select DP > 5 & get header information
+  	FILTERING($Mfolder, "$Mfolder/$libraryNO.vcf");
+  } else {print "Variants VCF already created\n";}
 
   #ANNOTATIONS : running VEP
   print "this is the species $specie\n"; #Remove this Modupe

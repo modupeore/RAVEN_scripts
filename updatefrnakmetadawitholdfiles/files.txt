@@ -1,0 +1,518 @@
+library_id	ref_genome	ann_file	ann_file_ver	stranded	sequences	user
+629	chicken	GFF3	gff-version 3		629_AGTCAA_L005_R1_001.fastq.gz	old update
+814	chicken				814_ATCACG_L001_R1_001.fastq	old update
+234	chicken	GFF3	gff-version 3		234_CAGATC_L007_R1_001.fastq.gz	old update
+593	chicken	GFF3	gff-version 3		593_ACAGTG_L007_R1_001.fastq.gz	old update
+655	chicken	GFF3	gff-version 3		655_ATGTCA_L002_R1_001.fastq.gz	old update
+684	chicken	GFF3	gff-version 3		684_CGATGT_L006_R1_001.fastq.gz	old update
+542	chicken	GFF3	gff-version 3		542_GTCCGC_L007_R1_001.fastq.gz	old update
+868	chicken				868_AGTCAA_L001_R1_001.fastq,868_AGTCAA_L001_R2_001.fastq	old update
+594	chicken	GFF3	gff-version 3		594_AGTTCC_L007_R1_001.fastq.gz	old update
+652	chicken	GFF3	gff-version 3		652_CTTGTA_L006_R1_001.fastq.gz	old update
+545	chicken	GFF3	gff-version 3		545_CGATGT_L007_R1_001.fastq.gz	old update
+189	chicken	GFF3	gff-version 3		189_GCCAAT_L001_R1_001.fastq.gz	old update
+539	chicken	GFF3	gff-version 3		539_CCGTCC_L002_R1_001.fastq.gz	old update
+95	chicken	GFF3	gff-version 3		95_CGATGT_L007_R1_001.fastq.gz	old update
+365	chicken	GFF3	gff-version 3		365_ATTT.fastq.gz	old update
+241	chicken	GFF3	gff-version 3		241_TGACCA_L008_R1_001.fastq.gz	old update
+994	chicken				994_ATGTCA_L002_R1_001.fastq,994_ATGTCA_L002_R2_001.fastq	old update
+620	chicken	GFF3	gff-version 3		620_CGATGT_L004_R1_001.fastq.gz	old update
+187	chicken	GFF3	gff-version 3		187_TGACCA_L001_R1_001.fastq.gz	old update
+537	chicken	GFF3	gff-version 3		537_CTTGTA_L002_R1_001.fastq.gz	old update
+993	chicken				993_AGTTCC_L002_R1_001.fastq,993_AGTTCC_L002_R2_001.fastq	old update
+627	chicken	GFF3	gff-version 3		627_TGACCA_L005_R1_001.fastq.gz	old update
+530	chicken	GFF3	gff-version 3		530_GTCCGC_L005_R1_001.fastq.gz	old update
+468	chicken	GFF3	gff-version 3		468_ACAGTG_L005_R1_001.fastq.gz	old update
+362	chicken	GFF3	gff-version 3		362_CTGC.fastq.gz	old update
+505	chicken	GFF3	gff-version 3		505_ACAGTG_L007_R1_001.fastq.gz	old update
+612	chicken	GFF3	gff-version 3		612_ACAGTG_L003_R1_001.fastq.gz	old update
+273	chicken	GFF3	gff-version 3		273_GCCAAT_L007_R1_001.fastq.gz	old update
+579	chicken	GFF3	gff-version 3		579_GCCAAT_L004_R1_001.fastq.gz	old update
+736	chicken	GFF3	gff-version 3		736_GCCAAT_L001_R1_001.fastq,736_GCCAAT_L001_R1_001.fastq	old update
+357	chicken	GFF3	gff-version 3		357_fil.fq.gz	old update
+386	chicken	GFF3	gff-version 3		386_fil.fq.gz	old update
+669	chicken	GFF3	gff-version 3		669_ATGTCA_L004_R1_001.fastq.gz	old update
+350	chicken	GFF3	gff-version 3		350_fil.fq.gz	old update
+381	chicken	GFF3	gff-version 3		381_fil.fq.gz	old update
+615	chicken	GFF3	gff-version 3		615_ATGTCA_L003_R1_001.fastq.gz	old update
+274	chicken	GFF3	gff-version 3		274_CAGATC_L007_R1_001.fastq.gz	old update
+828	chicken				828_GTCCGC_L004_R1_001.fastq	old update
+570	chicken	GFF3	gff-version 3		570_AGTTCC_L003_R1_001.fastq.gz	old update
+667	chicken	GFF3	gff-version 3		667_AGTCAA_L004_R1_001.fastq.gz	old update
+71	chicken	GFF3	gff-version 3		71_GCCAAT_L008_R1_001.fastq.gz	old update
+743	chicken	GFF3	gff-version 3		743_2_CGATGT_L002_R2_001.fastq,743_2_CGATGT_L002_R2_001.fastq	old update
+485	chicken	GFF3	gff-version 3		485_ACAGTG_L001_R1_001.fastq.gz	old update
+322	chicken	GFF3	gff-version 3		322_fil.fq.gz	old update
+454	chicken	GFF3	gff-version 3		454_CGATGT_L002_R1_001.fastq.gz	old update
+826	chicken				826_CGATGT_L004_R1_001.fastq	old update
+744	chicken	GFF3	gff-version 3		744_16_CCGTCC_L002_R2_001.fastq,744_16_CCGTCC_L002_R2_001.fastq	old update
+325	chicken	GFF3	gff-version 3		325_fil.fq.gz	old update
+453	chicken	GFF3	gff-version 3		453_AGTTCC_L002_R1_001.fastq.gz	old update
+577	chicken	GFF3	gff-version 3		577_TGACCA_L004_R1_001.fastq.gz	old update
+201	chicken	GFF3	gff-version 3		201_TGACCA_L007_R1_001.fastq.gz	old update
+738	chicken	GFF3	gff-version 3		738_CTTGTA_L001_R2_001.fastq,738_CTTGTA_L001_R2_001.fastq	old update
+359	chicken	GFF3	gff-version 3		359_fil.fq.gz	old update
+388	chicken	GFF3	gff-version 3		388_fil.fq.gz	old update
+493	chicken	GFF3	gff-version 3		493_ATGTCA_L005_R1_001.fastq.gz	old update
+334	chicken	GFF3	gff-version 3		334_fil.fq.gz	old update
+729	chicken	GFF3	gff-version 3		729_GTCCGC_L005_R1_001.fastq,729_GTCCGC_L005_R1_001.fastq	old update
+348	chicken	GFF3	gff-version 3		348_fil.fq.gz	old update
+671	chicken	GFF3	gff-version 3		671_GTCCGC_L004_R1_001.fastq.gz	old update
+210	chicken	GFF3	gff-version 3		210_CGATGT_L004_R1_001.fastq.gz	old update
+914	chicken				914_ACTTGA_L004_R1_001.fastq,914_ACTTGA_L004_R2_001.fastq	old update
+566	chicken	GFF3	gff-version 3		566_CCGTCC_L002_R1_001.fastq.gz	old update
+439	chicken	GFF3	gff-version 3		439_CAGATC_L006_R1_001.fastq.gz	old update
+676	chicken	GFF3	gff-version 3		676_CTTGTA_L005_R1_001.fastq.gz	old update
+217	chicken	GFF3	gff-version 3		217_CGATGT_L005_R1_001.fastq.gz	old update
+913	chicken				913_TTAGGC_L004_R1_001.fastq,913_TTAGGC_L004_R2_001.fastq	old update
+445	chicken	GFF3	gff-version 3		445_TGACCA_L001_R1_001.fastq.gz	old update
+333	chicken	GFF3	gff-version 3		333_fil.fq.gz	old update
+494	chicken	GFF3	gff-version 3		494_CCGTCC_L006_R1_001.fastq.gz	old update
+845	chicken				845_TGACCA_L002_R1_001.fastq	old update
+437	chicken	GFF3	gff-version 3		437_ACAGTG_L006_R1_001.fastq.gz	old update
+390	chicken	GFF3	gff-version 3		390_fil.fq.gz	old update
+720	chicken	GFF3	gff-version 3		720_GTGAAA_L005_R1_001.fastq.gz	old update
+894	chicken				894_TAGCTT_L002_R1_001.fastq,894_TAGCTT_L002_R2_001.fastq	old update
+341	chicken	GFF3	gff-version 3		341_fil.fq.gz	old update
+678	chicken	GFF3	gff-version 3		678_AGTTCC_L005_R1_001.fastq.gz	old update
+219	chicken	GFF3	gff-version 3		219_ACAGTG_L005_R1_001.fastq.gz	old update
+839	chicken				839_AGTTCC_L003_R1_001.fastq	old update
+513	chicken	GFF3	gff-version 3		513_CCGTCC_L006_R1_001.fastq.gz	old update
+514	chicken	GFF3	gff-version 3		514_GTCCGC_L006_R1_001.fastq.gz	old update
+842	chicken				842_GTCCGC_L002_R1_001.fastq	old update
+727	chicken	GFF3	gff-version 3		727_ATGTCA_L005_R1_001.fastq,727_ATGTCA_L005_R1_001.fastq	old update
+15	chicken	GFF3	gff-version 3		15_TGACCA_L004_R1_001.fastq.gz	old update
+568	chicken	GFF3	gff-version 3		568_CTTGTA_L003_R1_001.fastq.gz	old update
+636	chicken	GFF3	gff-version 3		636_AGTTCC_L005_R1_001.fastq.gz	old update
+191	chicken	GFF3	gff-version 3		191_CTTGTA_L001_R1_001.fastq.gz	old update
+373	chicken	GFF3	gff-version 3		373_GCCAAT_L004_R1_001.fastq.gz	old update
+712	chicken				712_CAGATC_L005_R1_001.fastq	old update
+20	chicken	GFF3	gff-version 3		20_CTTGTA_L004_R1_001.fastq.gz	old update
+374	chicken	GFF3	gff-version 3		374_CAGATC_L004_R1_001.fastq.gz	old update
+715	chicken	GFF3	gff-version 3		715_CTTGTA_L005_R1_001.fastq.gz	old update
+928	chicken				928_GTTTCG_L005_R1_001.fastq,928_GTTTCG_L005_R2_001.fastq	old update
+526	chicken	GFF3	gff-version 3		526_GCCAAT_L007_R1_001.fastq.gz	old update
+281	chicken	GFF3	gff-version 3		281_ACAGTG_L002_R1_001.fastq.gz	old update
+631	chicken	GFF3	gff-version 3		631_ATGTCA_L005_R1_001.fastq.gz	old update
+554	chicken	GFF3	gff-version 3		554_CAGATC_L006_R1_001.fastq.gz	old update
+926	chicken				926_GGCTAC_L005_R1_001.fastq,926_GGCTAC_L005_R2_001.fastq	old update
+222	chicken	GFF3	gff-version 3		222_CTTGTA_L005_R1_001.fastq.gz	old update
+585	chicken	GFF3	gff-version 3		585_CGATGT_L001_R1_001.fastq.gz	old update
+306	chicken	GFF3	gff-version 3		306_CTTGTA_L001_R1_001.fastq.gz	old update
+470	chicken	GFF3	gff-version 3		470_GCCAAT_L006_R1_001.fastq.gz	old update
+84	chicken	GFF3	gff-version 3		84_CTTGTA_L004_R1_001.fastq.gz	old update
+301	chicken	GFF3	gff-version 3		301_CGATGT_L001_R1_001.fastq.gz	old update
+477	chicken	GFF3	gff-version 3		477_TGACCA_L006_R1_001.fastq.gz	old update
+83	chicken	GFF3	gff-version 3		83_CAGATC_L004_R1_001.fastq.gz	old update
+638	chicken	GFF3	gff-version 3		638_CGATGT_L005_R1_001.fastq.gz	old update
+879	chicken	GFF3	gff-version 3		879_TAGCTT_L001_R1_001.fastq,879_TAGCTT_L001_R2_001.fastq	old update
+921	chicken				921_ATCACG_L005_R1_001.fastq,921_ATCACG_L005_R2_001.fastq	old update
+553	chicken	GFF3	gff-version 3		553_CTTGTA_L006_R1_001.fastq.gz	old update
+225	chicken	GFF3	gff-version 3		225_TGACCA_L006_R1_001.fastq.gz	old update
+745	chicken	GFF3	gff-version 3		745_18_GTCCGC_L002_R2_001.fastq,745_18_GTCCGC_L002_R2_001.fastq	old update
+576	chicken	GFF3	gff-version 3		576_CGATGT_L004_R1_001.fastq.gz	old update
+661	chicken	GFF3	gff-version 3		661_CGATGT_L003_R1_001.fastq.gz	old update
+200	chicken	GFF3	gff-version 3		200_CGATGT_L007_R1_001.fastq.gz	old update
+739	chicken	GFF3	gff-version 3		739_AGTCAA_L001_R2_001.fastq,739_AGTCAA_L001_R2_001.fastq	old update
+358	chicken	GFF3	gff-version 3		358_fil.fq.gz	old update
+389	chicken	GFF3	gff-version 3		389_fil.fq.gz	old update
+903	chicken				903_ATCACG_L003_R1_001.fastq,903_ATCACG_L003_R2_001.fastq	old update
+666	chicken	GFF3	gff-version 3		666_CTTGTA_L003_R1_001.fastq.gz	old update
+70	chicken	GFF3	gff-version 3		70_CGATGT_L008_R1_001.fastq.gz	old update
+323	chicken	GFF3	gff-version 3		323_fil.fq.gz	old update
+484	chicken	GFF3	gff-version 3		484_TGACCA_L001_R1_001.fastq.gz	old update
+455	chicken	GFF3	gff-version 3		455_TGACCA_L002_R1_001.fastq.gz	old update
+827	chicken				827_GTGAAA_L004_R1_001.fastq	old update
+668	chicken	GFF3	gff-version 3		668_AGTTCC_L004_R1_001.fastq.gz	old update
+884	chicken	GFF3	gff-version 3		884_GAGTGG_L001_R1_001.fastq,884_GAGTGG_L001_R2_001.fastq	old update
+351	chicken	GFF3	gff-version 3		351_fil.fq.gz	old update
+380	chicken	GFF3	gff-version 3		380_fil.fq.gz	old update
+503	chicken	GFF3	gff-version 3		503_CGATGT_L007_R1_001.fastq.gz	old update
+614	chicken	GFF3	gff-version 3		614_CAGATC_L003_R1_001.fastq.gz	old update
+275	chicken	GFF3	gff-version 3		275_CTTGTA_L007_R1_001.fastq.gz	old update
+504	chicken	GFF3	gff-version 3		504_TGACCA_L007_R1_001.fastq.gz	old update
+613	chicken	GFF3	gff-version 3		613_GCCAAT_L003_R1_001.fastq.gz	old update
+79	chicken	GFF3	gff-version 3		79_CGATGT_L004_R1_001.fastq.gz	old update
+272	chicken	GFF3	gff-version 3		272_ACAGTG_L007_R1_001.fastq.gz	old update
+578	chicken	GFF3	gff-version 3		578_ACAGTG_L004_R1_001.fastq.gz	old update
+737	chicken	GFF3	gff-version 3		737_CAGATC_L001_R1_001.fastq,737_CAGATC_L001_R1_001.fastq	old update
+356	chicken	GFF3	gff-version 3		356_fil.fq.gz	old update
+883	chicken	GFF3	gff-version 3		883_CGTACG_L001_R1_001.fastq,883_CGTACG_L001_R2_001.fastq	old update
+387	chicken	GFF3	gff-version 3		387_fil.fq.gz	old update
+992	chicken				992_AGTCAA_L002_R1_001.fastq,992_AGTCAA_L002_R2_001.fastq	old update
+626	chicken	GFF3	gff-version 3		626_CGATGT_L005_R1_001.fastq.gz	old update
+531	chicken	GFF3	gff-version 3		531_GTGAAA_L005_R1_001.fastq.gz	old update
+469	chicken	GFF3	gff-version 3		469_CGATGT_L006_R1_001.fastq.gz	old update
+867	chicken				867_CTTGTA_L001_R1_001.fastq,867_CTTGTA_L001_R2_001.fastq	old update
+363	chicken	GFF3	gff-version 3		363_GCTG.fastq.gz	old update
+364	chicken	GFF3	gff-version 3		364_TGCT.fastq.gz	old update
+240	chicken	GFF3	gff-version 3		240_ACAGTG_L008_R1_001.fastq.gz	old update
+186	chicken	GFF3	gff-version 3		186_CGATGT_L001_R1_001.fastq.gz	old update
+621	chicken	GFF3	gff-version 3		621_AGTTCC_L004_R1_001.fastq.gz	old update
+232	chicken	GFF3	gff-version 3		232_ACAGTG_L007_R1_001.fastq.gz	old update
+595	chicken	GFF3	gff-version 3		595_TGACCA_L007_R1_001.fastq.gz	old update
+653	chicken	GFF3	gff-version 3		653_AGTCAA_L002_R1_001.fastq.gz	old update
+682	chicken	GFF3	gff-version 3		682_GTGAAA_L005_R1_001.fastq.gz	old update
+936	chicken				936_GAGTGG_L006_R1_001.fastq,936_GAGTGG_L006_R2_001.fastq	old update
+544	chicken	GFF3	gff-version 3		544_CCGTCC_L007_R1_001.fastq.gz	old update
+188	chicken	GFF3	gff-version 3		188_ACAGTG_L001_R1_001.fastq.gz	old update
+538	chicken	GFF3	gff-version 3		538_AGTCAA_L002_R1_001.fastq.gz	old update
+460	chicken	GFF3	gff-version 3		460_GTGAAA_L002_R1_001.fastq.gz	old update
+628	chicken	GFF3	gff-version 3		628_CAGATC_L005_R1_001.fastq.gz	old update
+592	chicken	GFF3	gff-version 3		592_AGTCAA_L007_R1_001.fastq.gz	old update
+235	chicken	GFF3	gff-version 3		235_CTTGTA_L007_R1_001.fastq.gz	old update
+654	chicken	GFF3	gff-version 3		654_AGTTCC_L002_R1_001.fastq.gz	old update
+685	chicken	GFF3	gff-version 3		685_GTCCGC_L006_R1_001.fastq.gz	old update
+543	chicken	GFF3	gff-version 3		543_GTGAAA_L007_R1_001.fastq.gz	old update
+931	chicken				931_TAGCTT_L006_R1_001.fastq,931_TAGCTT_L006_R2_001.fastq	old update
+869	chicken				869_AGTTCC_L001_R1_001.fastq,869_AGTTCC_L001_R2_001.fastq	old update
+476	chicken	GFF3	gff-version 3		476_AGTCAA_L006_R1_001.fastq.gz	old update
+82	chicken	GFF3	gff-version 3		82_GCCAAT_L004_R1_001.fastq.gz	old update
+552	chicken	GFF3	gff-version 3		552_GCCAAT_L006_R1_001.fastq.gz	old update
+224	chicken	GFF3	gff-version 3		224_CGATGT_L006_R1_001.fastq.gz	old update
+583	chicken	GFF3	gff-version 3		583_GTCCGC_L001_R1_001.fastq.gz	old update
+927	chicken				927_GTGGCC_L005_R1_001.fastq,927_GTGGCC_L005_R2_001.fastq	old update
+584	chicken	GFF3	gff-version 3		584_GTGAAA_L001_R1_001.fastq.gz	old update
+471	chicken	GFF3	gff-version 3		471_CAGATC_L006_R1_001.fastq.gz	old update
+529	chicken	GFF3	gff-version 3		529_CCGTCC_L005_R1_001.fastq.gz	old update
+375	chicken	GFF3	gff-version 3		375_CTTGTA_L004_R1_001.fastq.gz	old update
+26	chicken	GFF3	gff-version 3		26.fastq.gz	old update
+527	chicken	GFF3	gff-version 3		527_CAGATC_L007_R1_001.fastq.gz	old update
+955	chicken				955_TAGCTT_L001_R1_001.fastq,955_TAGCTT_L001_R2_001.fastq	old update
+984	chicken				984_GCCAAT_L007_R1_001.fastq,984_GCCAAT_L007_R2_001.fastq	old update
+630	chicken	GFF3	gff-version 3		630_AGTTCC_L005_R1_001.fastq.gz	old update
+983	chicken				983_ACAGTG_L007_R1_001.fastq,983_ACAGTG_L007_R2_001.fastq	old update
+190	chicken	GFF3	gff-version 3		190_CAGATC_L001_R1_001.fastq.gz	old update
+637	chicken	GFF3	gff-version 3		637_TGACCA_L005_R1_001.fastq.gz	old update
+372	chicken	GFF3	gff-version 3		372_ACAGTG_L004_R1_001.fastq.gz	old update
+713	chicken				713_CTTGTA_L005_R1_001.fastq	old update
+515	chicken	GFF3	gff-version 3		515_GTGAAA_L006_R1_001.fastq.gz	old update
+843	chicken				843_CGATGT_L002_R1_001.fastq	old update
+726	chicken	GFF3	gff-version 3		726_AGTTCC_L005_R1_001.fastq,726_AGTTCC_L005_R1_001.fastq	old update
+347	chicken	GFF3	gff-version 3		347_fil.fq.gz	old update
+569	chicken	GFF3	gff-version 3		569_AGTCAA_L003_R1_001.fastq.gz	old update
+391	chicken	GFF3	gff-version 3		391_fil.fq.gz	old update
+844	chicken				844_CCGTCC_L002_R1_001.fastq	old update
+721	chicken	GFF3	gff-version 3		721_CGATGT_L005_R1_001.fastq.gz	old update
+340	chicken	GFF3	gff-version 3		340_fil.fq.gz	old update
+895	chicken				895_GGCTAC_L002_R1_001.fastq,895_GGCTAC_L002_R2_001.fastq	old update
+679	chicken	GFF3	gff-version 3		679_ATGTCA_L005_R1_001.fastq.gz	old update
+218	chicken	GFF3	gff-version 3		218_TGACCA_L005_R1_001.fastq.gz	old update
+512	chicken	GFF3	gff-version 3		512_ATGTCA_L006_R1_001.fastq.gz	old update
+960	chicken				960_ACTGAT_L001_R1_001.fastq,960_ACTGAT_L001_R2_001.fastq	old update
+438	chicken	GFF3	gff-version 3		438_GCCAAT_L006_R1_001.fastq.gz	old update
+677	chicken	GFF3	gff-version 3		677_AGTCAA_L005_R1_001.fastq.gz	old update
+560	chicken	GFF3	gff-version 3		560_ATGTCA_L005_R1_001.fastq.gz	old update
+912	chicken				912_ATCACG_L004_R1_001.fastq,912_ATCACG_L004_R2_001.fastq	old update
+836	chicken				836_ACAGTG_L003_R1_001.fastq	old update
+332	chicken	GFF3	gff-version 3		332_fil.fq.gz	old update
+443	chicken	GFF3	gff-version 3		443_AGTCAA_L001_R1_001.fastq.gz	old update
+335	chicken	GFF3	gff-version 3		335_fil.fq.gz	old update
+492	chicken	GFF3	gff-version 3		492_CAGATC_L005_R1_001.fastq.gz	old update
+728	chicken	GFF3	gff-version 3		728_CCGTCC_L005_R1_001.fastq.gz	old update
+349	chicken	GFF3	gff-version 3		349_fil.fq.gz	old update
+670	chicken	GFF3	gff-version 3		670_CCGTCC_L004_R1_001.fastq.gz	old update
+211	chicken	GFF3	gff-version 3		211_TGACCA_L004_R1_001.fastq.gz	old update
+915	chicken				915_GATCAG_L004_R1_001.fastq,915_GATCAG_L004_R2_001.fastq	old update
+719	chicken	GFF3	gff-version 3		719_GTCCGC_L005_R1_001.fastq.gz	old update
+378	chicken	GFF3	gff-version 3		378_fil.fq.gz	old update
+556	chicken	GFF3	gff-version 3		556_GTCCGC_L005_R1_001.fastq.gz	old update
+587	chicken	GFF3	gff-version 3		587_ATGTCA_L001_R1_001.fastq.gz	old update
+220	chicken	GFF3	gff-version 3		220_GCCAAT_L005_R1_001.fastq.gz	old update
+304	chicken	GFF3	gff-version 3		304_GCCAAT_L001_R1_001.fastq.gz	old update
+472	chicken	GFF3	gff-version 3		472_ACAGTG_L006_R1_001.fastq.gz	old update
+958	chicken				958_CGTACG_L001_R1_001.fastq,958_CGTACG_L001_R2_001.fastq	old update
+303	chicken	GFF3	gff-version 3		303_ACAGTG_L001_R1_001.fastq.gz	old update
+807	chicken				807_ACTTGA_L006_R1_001.fastq	old update
+81	chicken	GFF3	gff-version 3		81_ACAGTG_L004_R1_001.fastq.gz	old update
+551	chicken	GFF3	gff-version 3		551_AGTCAA_L006_R1_001.fastq.gz	old update
+227	chicken	GFF3	gff-version 3		227_GCCAAT_L006_R1_001.fastq.gz	old update
+580	chicken	GFF3	gff-version 3		580_CAGATC_L004_R1_001.fastq.gz	old update
+809	chicken				809_TAGCTT_L006_R1_001.fastq	old update
+523	chicken	GFF3	gff-version 3		523_AGTCAA_L007_R1_001.fastq.gz	old update
+634	chicken	GFF3	gff-version 3		634_ACAGTG_L005_R1_001.fastq.gz	old update
+710	chicken				710_ACAGTG_L005_R1_001.fastq	old update
+371	chicken	GFF3	gff-version 3		371_TGACCA_L004_R1_001.fastq.gz	old update
+648	chicken	GFF3	gff-version 3		648_TGACCA_L006_R1_001.fastq.gz	old update
+229	chicken	GFF3	gff-version 3		229_CTTGTA_L006_R1_001.fastq.gz	old update
+717	chicken	GFF3	gff-version 3		717_AGTTCC_L005_R1_001.fastq.gz	old update
+376	chicken	GFF3	gff-version 3		376_fil.fq.gz	old update
+558	chicken	GFF3	gff-version 3		558_CCGTCC_L005_R1_001.fastq.gz	old update
+956	chicken				956_GGCTAC_L001_R1_001.fastq,956_GGCTAC_L001_R2_001.fastq	old update
+524	chicken	GFF3	gff-version 3		524_TGACCA_L007_R1_001.fastq.gz	old update
+987	chicken				987_AGTCAA_L007_R1_001.fastq,987_AGTCAA_L007_R2_001.fastq	old update
+392	chicken	GFF3	gff-version 3		392_fil.fq.gz	old update
+343	chicken	GFF3	gff-version 3		343_fil.fq.gz	old update
+722	chicken	GFF3	gff-version 3		722_ATGTCA_L005_R1_001.fastq	old update
+449	chicken	GFF3	gff-version 3		449_ATGTCA_L001_R1_001.fastq.gz	old update
+498	chicken	GFF3	gff-version 3		498_ACAGTG_L005_R1_001.fastq.gz	old update
+511	chicken	GFF3	gff-version 3		511_AGTTCC_L006_R1_001.fastq.gz	old update
+344	chicken	GFF3	gff-version 3		344_fil.fq.gz	old update
+725	chicken	GFF3	gff-version 3		725_AGTCAA_L005_R1_001.fastq,725_AGTCAA_L005_R1_001.fastq	old update
+17	chicken	GFF3	gff-version 3		17_ACAGTG_L004_R1_001.fastq.gz	old update
+918	chicken				918_GTGGCC_L004_R1_001.fastq,918_GTGGCC_L004_R2_001.fastq	old update
+440	chicken	GFF3	gff-version 3		440_CTTGTA_L006_R1_001.fastq.gz	old update
+336	chicken	GFF3	gff-version 3		336_fil.fq.gz	old update
+491	chicken	GFF3	gff-version 3		491_CCGTCC_L001_R1_001.fastq.gz	old update
+19	chicken	GFF3	gff-version 3		19_CGATGT_L004_R1_001.fastq.gz	old update
+212	chicken	GFF3	gff-version 3		212_ACAGTG_L004_R1_001.fastq.gz	old update
+564	chicken	GFF3	gff-version 3		564_AGTTCC_L002_R1_001.fastq.gz	old update
+215	chicken	GFF3	gff-version 3		215_CTTGTA_L004_R1_001.fastq.gz	old update
+563	chicken	GFF3	gff-version 3		563_AGTCAA_L002_R1_001.fastq.gz	old update
+447	chicken	GFF3	gff-version 3		447_GCCAAT_L001_R1_001.fastq.gz	old update
+496	chicken	GFF3	gff-version 3		496_CGATGT_L005_R1_001.fastq.gz	old update
+572	chicken	GFF3	gff-version 3		572_ATGTCA_L003_R1_001.fastq.gz	old update
+900	chicken				900_GAGTGG_L003_R1_001.fastq,900_GAGTGG_L003_R2_001.fastq	old update
+204	chicken	GFF3	gff-version 3		204_CAGATC_L007_R1_001.fastq.gz	old update
+665	chicken	GFF3	gff-version 3		665_CAGATC_L003_R1_001.fastq.gz	old update
+73	chicken	GFF3	gff-version 3		73_TGACCA_L008_R1_001.fastq.gz	old update
+619	chicken	GFF3	gff-version 3		619_ATGTCA_L004_R1_001.fastq.gz	old update
+320	chicken	GFF3	gff-version 3		320_fil.fq.gz	old update
+487	chicken	GFF3	gff-version 3		487_AGTTCC_L001_R1_001.fastq.gz	old update
+741	chicken	GFF3	gff-version 3		741_ATGTCA_L001_R2_001.fastq,741_ATGTCA_L001_R2_001.fastq	old update
+456	chicken	GFF3	gff-version 3		456_ACAGTG_L002_R1_001.fastq.gz	old update
+480	chicken	GFF3	gff-version 3		480_TGACCA_L005_R1_001.fastq.gz	old update
+327	chicken	GFF3	gff-version 3		327_fil.fq.gz	old update
+451	chicken	GFF3	gff-version 3		451_GTCCGC_L001_R1_001.fastq.gz	old update
+203	chicken	GFF3	gff-version 3		203_GCCAAT_L007_R1_001.fastq.gz	old update
+662	chicken	GFF3	gff-version 3		662_TGACCA_L003_R1_001.fastq.gz	old update
+507	chicken	GFF3	gff-version 3		507_CAGATC_L007_R1_001.fastq.gz	old update
+271	chicken	GFF3	gff-version 3		271_TGACCA_L007_R1_001.fastq.gz	old update
+329	chicken	GFF3	gff-version 3		329_fil.fq.gz	old update
+355	chicken	GFF3	gff-version 3		355_fil.fq.gz	old update
+880	chicken				880_GGCTAC_L001_R1_001.fastq,880_GGCTAC_L001_R2_001.fastq	old update
+734	chicken	GFF3	gff-version 3		734_TGACCA_L001_R2_001.fastq,734_TGACCA_L001_R2_001.fastq	old update
+384	chicken	GFF3	gff-version 3		384_fil.fq.gz	old update
+352	chicken	GFF3	gff-version 3		352_fil.fq.gz	old update
+383	chicken	GFF3	gff-version 3		383_fil.fq.gz	old update
+500	chicken	GFF3	gff-version 3		500_CAGATC_L005_R1_001.fastq.gz	old update
+617	chicken	GFF3	gff-version 3		617_GCCAAT_L004_R1_001.fastq.gz	old update
+489	chicken	GFF3	gff-version 3		489_AGTTCC_L002_R1_001.fastq.gz	old update
+458	chicken	GFF3	gff-version 3		458_CAGATC_L002_R1_001.fastq.gz	old update
+549	chicken	GFF3	gff-version 3		549_AGTTCC_L006_R1_001.fastq.gz	old update
+863	chicken				863_TGACCA_L001_R1_001.fastq,863_TGACCA_L001_R2_001.fastq	old update
+622	chicken	GFF3	gff-version 3		622_TGACCA_L004_R1_001.fastq.gz	old update
+243	chicken	GFF3	gff-version 3		243_CTTGTA_L008_R1_001.fastq.gz	old update
+99	chicken	GFF3	gff-version 3		99_CAGATC_L007_R1_001.fastq.gz	old update
+238	chicken	GFF3	gff-version 3		238_CGATGT_L008_R1_001.fastq.gz	old update
+688	chicken	GFF3	gff-version 3		688_CCGTCC_L006_R1_001.fastq.gz	old update
+864	chicken				864_ACAGTG_L001_R1_001.fastq,864_ACAGTG_L001_R2_001.fastq	old update
+657	chicken	GFF3	gff-version 3		657_GTCCGC_L002_R1_001.fastq.gz	old update
+591	chicken	GFF3	gff-version 3		591_CTTGTA_L007_R1_001.fastq.gz	old update
+236	chicken	GFF3	gff-version 3		236_GCCAAT_L007_R1_001.fastq.gz	old update
+932	chicken				932_GGCTAC_L006_R1_001.fastq,932_GGCTAC_L006_R2_001.fastq	old update
+540	chicken	GFF3	gff-version 3		540_GTCCGC_L002_R1_001.fastq.gz	old update
+686	chicken	GFF3	gff-version 3		686_GTGAAA_L006_R1_001.fastq.gz	old update
+650	chicken	GFF3	gff-version 3		650_GCCAAT_L006_R1_001.fastq.gz	old update
+231	chicken	GFF3	gff-version 3		231_CGATGT_L007_R1_001.fastq.gz	old update
+547	chicken	GFF3	gff-version 3		547_TGACCA_L007_R1_001.fastq.gz	old update
+935	chicken				935_CGTACG_L006_R1_001.fastq,935_CGTACG_L006_R2_001.fastq	old update
+681	chicken	GFF3	gff-version 3		681_GTCCGC_L005_R1_001.fastq.gz	old update
+708	chicken				708_CGATGT_L005_R1_001.fastq	old update
+97	chicken	GFF3	gff-version 3		97_ACAGTG_L007_R1_001.fastq.gz	old update
+811	chicken				811_GAGTGG_L006_R1_001.fastq	old update
+774	chicken				774_GCCAAT_L008_R1_001.fastq	old update
+899	chicken				899_CGTACG_L003_R1_001.fastq,899_CGTACG_L003_R2_001.fastq	old update
+214	chicken	GFF3	gff-version 3		214_CAGATC_L004_R1_001.fastq.gz	old update
+675	chicken	GFF3	gff-version 3		675_CAGATC_L005_R1_001.fastq.gz	old update
+562	chicken	GFF3	gff-version 3		562_CTTGTA_L002_R1_001.fastq.gz	old update
+446	chicken	GFF3	gff-version 3		446_ACAGTG_L001_R1_001.fastq.gz	old update
+834	chicken				834_CTTGTA_L003_R1_001.fastq	old update
+330	chicken	GFF3	gff-version 3		330_fil.fq.gz	old update
+497	chicken	GFF3	gff-version 3		497_TGACCA_L005_R1_001.fastq.gz	old update
+490	chicken	GFF3	gff-version 3		490_ATGTCA_L002_R1_001.fastq.gz	old update
+337	chicken	GFF3	gff-version 3		337_fil.fq.gz	old update
+213	chicken	GFF3	gff-version 3		213_GCCAAT_L004_R1_001.fastq.gz	old update
+18	chicken	GFF3	gff-version 3		18_CAGATC_L004_R1_001.fastq.gz	old update
+672	chicken	GFF3	gff-version 3		672_GTGAAA_L004_R1_001.fastq.gz	old update
+565	chicken	GFF3	gff-version 3		565_ATGTCA_L002_R1_001.fastq.gz	old update
+917	chicken				917_GGCTAC_L004_R1_001.fastq,917_GGCTAC_L004_R2_001.fastq	old update
+339	chicken	GFF3	gff-version 3		339_fil.fq.gz	old update
+841	chicken				841_ATGTCA_L002_R1_001.fastq	old update
+724	chicken	GFF3	gff-version 3		724_CTTGTA_L005_R1_001.fastq,724_CTTGTA_L005_R1_001.fastq	old update
+16	chicken	GFF3	gff-version 3		16_GCCAAT_L004_R1_001.fastq.gz	old update
+919	chicken				919_GTTTCG_L004_R1_001.fastq,919_GTTTCG_L004_R2_001.fastq	old update
+846	chicken				846_CTTGTA_L002_R1_001.fastq	old update
+897	chicken				897_GTTTCG_L002_R1_001.fastq,897_GTTTCG_L002_R2_001.fastq	old update
+342	chicken	GFF3	gff-version 3		342_fil.fq.gz	old update
+448	chicken	GFF3	gff-version 3		448_CAGATC_L001_R1_001.fastq.gz	old update
+499	chicken	GFF3	gff-version 3		499_GCCAAT_L005_R1_001.fastq.gz	old update
+510	chicken	GFF3	gff-version 3		510_AGTCAA_L006_R1_001.fastq.gz	old update
+377	chicken	GFF3	gff-version 3		377_fil.fq.gz	old update
+559	chicken	GFF3	gff-version 3		559_CGATGT_L005_R1_001.fastq.gz	old update
+588	chicken	GFF3	gff-version 3		588_GCCAAT_L001_R1_001.fastq.gz	old update
+957	chicken				957_GTTTCG_L001_R1_001.fastq,957_GTTTCG_L001_R2_001.fastq	old update
+525	chicken	GFF3	gff-version 3		525_ACAGTG_L007_R1_001.fastq.gz	old update
+632	chicken	GFF3	gff-version 3		632_CCGTCC_L005_R1_001.fastq.gz	old update
+986	chicken				986_CTTGTA_L007_R1_001.fastq,986_CTTGTA_L007_R2_001.fastq	old update
+808	chicken				808_GATCAG_L006_R1_001.fastq	old update
+522	chicken	GFF3	gff-version 3		522_CTTGTA_L007_R1_001.fastq.gz	old update
+635	chicken	GFF3	gff-version 3		635_CAGATC_L005_R1_001.fastq.gz	old update
+981	chicken				981_CGATGT_L007_R1_001.fastq,981_CGATGT_L007_R2_001.fastq	old update
+711	chicken				711_GCCAAT_L005_R1_001.fastq	old update
+370	chicken	GFF3	gff-version 3		370_CGATGT_L004_R1_001.fastq.gz	old update
+649	chicken	GFF3	gff-version 3		649_ACAGTG_L006_R1_001.fastq.gz	old update
+228	chicken	GFF3	gff-version 3		228_CAGATC_L006_R1_001.fastq.gz	old update
+302	chicken	GFF3	gff-version 3		302_TGACCA_L001_R1_001.fastq.gz	old update
+80	chicken	GFF3	gff-version 3		80_TGACCA_L004_R1_001.fastq.gz	old update
+550	chicken	GFF3	gff-version 3		550_ACAGTG_L006_R1_001.fastq.gz	old update
+922	chicken				922_TTAGGC_L005_R1_001.fastq,922_TTAGGC_L005_R2_001.fastq	old update
+647	chicken	GFF3	gff-version 3		647_CGATGT_L006_R1_001.fastq.gz	old update
+581	chicken	GFF3	gff-version 3		581_CTTGTA_L004_R1_001.fastq.gz	old update
+226	chicken	GFF3	gff-version 3		226_ACAGTG_L006_R1_001.fastq.gz	old update
+379	chicken	GFF3	gff-version 3		379_fil.fq.gz	old update
+925	chicken				925_TAGCTT_L005_R1_001.fastq,925_TAGCTT_L005_R2_001.fastq	old update
+557	chicken	GFF3	gff-version 3		557_GTGAAA_L005_R1_001.fastq.gz	old update
+221	chicken	GFF3	gff-version 3		221_CAGATC_L005_R1_001.fastq.gz	old update
+586	chicken	GFF3	gff-version 3		586_CCGTCC_L001_R1_001.fastq.gz	old update
+305	chicken	GFF3	gff-version 3		305_CAGATC_L001_R1_001.fastq.gz	old update
+651	chicken	GFF3	gff-version 3		651_CAGATC_L006_R1_001.fastq.gz	old update
+546	chicken	GFF3	gff-version 3		546_ATGTCA_L007_R1_001.fastq.gz	old update
+680	chicken	GFF3	gff-version 3		680_CCGTCC_L005_R1_001.fastq.gz	old update
+709	chicken				709_TGACCA_L005_R1_001.fastq	old update
+810	chicken				810_CGTACG_L006_R1_001.fastq	old update
+656	chicken	GFF3	gff-version 3		656_CCGTCC_L002_R1_001.fastq.gz	old update
+590	chicken	GFF3	gff-version 3		590_CAGATC_L007_R1_001.fastq.gz	old update
+933	chicken				933_GTGGCC_L006_R1_001.fastq,933_GTGGCC_L006_R2_001.fastq	old update
+541	chicken	GFF3	gff-version 3		541_GTGAAA_L003_R1_001.fastq.gz	old update
+687	chicken	GFF3	gff-version 3		687_TGACCA_L006_R1_001.fastq.gz	old update
+990	chicken				990_CAGATC_L002_R1_001.fastq,990_CAGATC_L002_R2_001.fastq	old update
+533	chicken	GFF3	gff-version 3		533_GCCAAT_L005_R1_001.fastq.gz	old update
+819	chicken				819_GCCAAT_L001_R1_001.fastq	old update
+658	chicken	GFF3	gff-version 3		658_GTGAAA_L002_R1_001.fastq.gz	old update
+239	chicken	GFF3	gff-version 3		239_TGACCA_L008_R1_001.fastq.gz	old update
+32	chicken	GFF3	gff-version 3		32.fastq.gz	old update
+689	chicken	GFF3	gff-version 3		689_ACAGTG_L006_R1_001.fastq.gz	old update
+865	chicken				865_GCCAAT_L001_R1_001.fastq,865_GCCAAT_L001_R2_001.fastq	old update
+361	chicken	GFF3	gff-version 3		361_AAAA.fastq.gz	old update
+366	chicken	GFF3	gff-version 3		366_CACG.fastq.gz	old update
+623	chicken	GFF3	gff-version 3		623_GTCCGC_L003_R1_001.fastq.gz	old update
+242	chicken	GFF3	gff-version 3		242_CAGATC_L008_R1_001.fastq.gz	old update
+997	chicken				997_GTGAAA_L002_R1_001.fastq,997_GTGAAA_L002_R2_001.fastq	old update
+98	chicken	GFF3	gff-version 3		98_GCCAAT_L007_R1_001.fastq.gz	old update
+886	chicken	GFF3	gff-version 3		886_ATTCCT_L001_R1_001.fastq,886_ATTCCT_L001_R2_001.fastq	old update
+382	chicken	GFF3	gff-version 3		382_fil.fq.gz	old update
+501	chicken	GFF3	gff-version 3		501_CTTGTA_L005_R1_001.fastq.gz	old update
+277	chicken	GFF3	gff-version 3		277_TGACCA_L002_R1_001.fastq.gz	old update
+616	chicken	GFF3	gff-version 3		616_CCGTCC_L004_R1_001.fastq.gz	old update
+488	chicken	GFF3	gff-version 3		488_ATGTCA_L001_R1_001.fastq.gz	old update
+459	chicken	GFF3	gff-version 3		459_GTCCGC_L002_R1_001.fastq.gz	old update
+506	chicken	GFF3	gff-version 3		506_GCCAAT_L007_R1_001.fastq.gz	old update
+270	chicken	GFF3	gff-version 3		270_CGATGT_L007_R1_001.fastq.gz	old update
+611	chicken	GFF3	gff-version 3		611_TGACCA_L003_R1_001.fastq.gz	old update
+328	chicken	GFF3	gff-version 3		328_fil.fq.gz	old update
+881	chicken				881_GTGGCC_L001_R1_001.fastq,881_GTGGCC_L001_R2_001.fastq	old update
+354	chicken	GFF3	gff-version 3		354_fil.fq.gz	old update
+735	chicken	GFF3	gff-version 3		735_ACAGTG_L001_R1_001.fastq,735_ACAGTG_L001_R1_001.fastq	old update
+385	chicken	GFF3	gff-version 3		385_fil.fq.gz	old update
+508	chicken	GFF3	gff-version 3		508_CTTGTA_L007_R1_001.fastq.gz	old update
+326	chicken	GFF3	gff-version 3		326_fil.fq.gz	old update
+481	chicken	GFF3	gff-version 3		481_GTCCGC_L006_R1_001.fastq.gz	old update
+450	chicken	GFF3	gff-version 3		450_CCGTCC_L001_R1_001.fastq.gz	old update
+663	chicken	GFF3	gff-version 3		663_ACAGTG_L003_R1_001.fastq.gz	old update
+573	chicken	GFF3	gff-version 3		573_CCGTCC_L003_R1_001.fastq.gz	old update
+901	chicken				901_ACTGAT_L003_R1_001.fastq,901_ACTGAT_L003_R2_001.fastq	old update
+205	chicken	GFF3	gff-version 3		205_CTTGTA_L007_R1_001.fastq.gz	old update
+664	chicken	GFF3	gff-version 3		664_GCCAAT_L003_R1_001.fastq.gz	old update
+72	chicken	GFF3	gff-version 3		72_ACAGTG_L008_R1_001.fastq.gz	old update
+618	chicken	GFF3	gff-version 3		618_ACAGTG_L004_R1_001.fastq.gz	old update
+486	chicken	GFF3	gff-version 3		486_AGTCAA_L001_R1_001.fastq.gz	old update
+321	chicken	GFF3	gff-version 3		321_fil.fq.gz	old update
+740	chicken	GFF3	gff-version 3		740_AGTTCC_L001_R1_001.fastq,740_AGTTCC_L001_R1_001.fastq	old update
+825	chicken				825_CCGTCC_L004_R1_001.fastq	old update
+457	chicken	GFF3	gff-version 3		457_GCCAAT_L002_R1_001.fastq.gz	old update
+248	chicken	GFF3	gff-version 3		s248_fil.fq.gz	old update
+299	chicken	GFF3	gff-version 3		s299_fil.fq.gz	old update
+123	chicken	GFF3	gff-version 3		s123_fil.fq.gz	old update
+124	chicken	GFF3	gff-version 3		s124_fil.fq.gz	old update
+156	chicken	GFF3	gff-version 3		s156_fil.fq.gz	old update
+290	chicken	GFF3	gff-version 3		s290_fil.fq.gz	old update
+246	chicken	GFF3	gff-version 3		s246_fil.fq.gz	old update
+180	chicken	GFF3	gff-version 3		s180_fil.fq.gz	old update
+164	chicken	GFF3	gff-version 3		s164_fil.fq.gz	old update
+208	chicken	GFF3	gff-version 3		s208_fil.fq.gz	old update
+163	chicken	GFF3	gff-version 3		s163_fil.fq.gz	old update
+206	chicken	GFF3	gff-version 3		s206_fil.fq.gz	old update
+67	chicken	GFF3	gff-version 3		s67_fil.fq.gz	old update
+265	chicken	GFF3	gff-version 3		s265_fil.fq.gz	old update
+172	chicken	GFF3	gff-version 3		s172_fil.fq.gz	old update
+262	chicken	GFF3	gff-version 3		s262_fil.fq.gz	old update
+175	chicken	GFF3	gff-version 3		s175_fil.fq.gz	old update
+140	chicken	GFF3	gff-version 3		s140_fil.fq.gz	old update
+286	chicken	GFF3	gff-version 3		s286_fil.fq.gz	old update
+257	chicken	GFF3	gff-version 3		s257_fil.fq.gz	old update
+147	chicken	GFF3	gff-version 3		s147_fil.fq.gz	old update
+250	chicken	GFF3	gff-version 3		s250_fil.fq.gz	old update
+135	chicken	GFF3	gff-version 3		s135_fil.fq.gz	old update
+288	chicken	GFF3	gff-version 3		s288_fil.fq.gz	old update
+259	chicken	GFF3	gff-version 3		s259_fil.fq.gz	old update
+207	chicken	GFF3	gff-version 3		s207_fil.fq.gz	old update
+162	chicken	GFF3	gff-version 3		s162_fil.fq.gz	old update
+247	chicken	GFF3	gff-version 3		s247_fil.fq.gz	old update
+181	chicken	GFF3	gff-version 3		s181_fil.fq.gz	old update
+157	chicken	GFF3	gff-version 3		s157_fil.fq.gz	old update
+291	chicken	GFF3	gff-version 3		s291_fil.fq.gz	old update
+125	chicken	GFF3	gff-version 3		s125_fil.fq.gz	old update
+159	chicken	GFF3	gff-version 3		s159_fil.fq.gz	old update
+249	chicken	GFF3	gff-version 3		s249_fil.fq.gz	old update
+289	chicken	GFF3	gff-version 3		s289_fil.fq.gz	old update
+258	chicken	GFF3	gff-version 3		s258_fil.fq.gz	old update
+133	chicken	GFF3	gff-version 3		s133_fil.fq.gz	old update
+134	chicken	GFF3	gff-version 3		s134_fil.fq.gz	old update
+148	chicken	GFF3	gff-version 3		s148_fil.fq.gz	old update
+146	chicken	GFF3	gff-version 3		s146_fil.fq.gz	old update
+280	chicken	GFF3	gff-version 3		s280_fil.fq.gz	old update
+141	chicken	GFF3	gff-version 3		s141_fil.fq.gz	old update
+287	chicken	GFF3	gff-version 3		s287_fil.fq.gz	old update
+256	chicken	GFF3	gff-version 3		s256_fil.fq.gz	old update
+263	chicken	GFF3	gff-version 3		s263_fil.fq.gz	old update
+174	chicken	GFF3	gff-version 3		s174_fil.fq.gz	old update
+264	chicken	GFF3	gff-version 3		s264_fil.fq.gz	old update
+173	chicken	GFF3	gff-version 3		s173_fil.fq.gz	old update
+66	chicken	GFF3	gff-version 3		s66_fil.fq.gz	old update
+137	chicken	GFF3	gff-version 3		s137_fil.fq.gz	old update
+284	chicken	GFF3	gff-version 3		s284_fil.fq.gz	old update
+142	chicken	GFF3	gff-version 3		s142_fil.fq.gz	old update
+139	chicken	GFF3	gff-version 3		s139_fil.fq.gz	old update
+283	chicken	GFF3	gff-version 3		s283_fil.fq.gz	old update
+145	chicken	GFF3	gff-version 3		s145_fil.fq.gz	old update
+252	chicken	GFF3	gff-version 3		s252_fil.fq.gz	old update
+267	chicken	GFF3	gff-version 3		s267_fil.fq.gz	old update
+260	chicken	GFF3	gff-version 3		s260_fil.fq.gz	old update
+177	chicken	GFF3	gff-version 3		s177_fil.fq.gz	old update
+179	chicken	GFF3	gff-version 3		s179_fil.fq.gz	old update
+278	chicken	GFF3	gff-version 3		s278_fil.fq.gz	old update
+161	chicken	GFF3	gff-version 3		s161_fil.fq.gz	old update
+276	chicken	GFF3	gff-version 3		s276_fil.fq.gz	old update
+128	chicken	GFF3	gff-version 3		s128_fil.fq.gz	old update
+292	chicken	GFF3	gff-version 3		s292_fil.fq.gz	old update
+154	chicken	GFF3	gff-version 3		s154_fil.fq.gz	old update
+182	chicken	GFF3	gff-version 3		s182_fil.fq.gz	old update
+153	chicken	GFF3	gff-version 3		s153_fil.fq.gz	old update
+126	chicken	GFF3	gff-version 3		s126_fil.fq.gz	old update
+261	chicken	GFF3	gff-version 3		s261_fil.fq.gz	old update
+176	chicken	GFF3	gff-version 3		s176_fil.fq.gz	old update
+266	chicken	GFF3	gff-version 3		s266_fil.fq.gz	old update
+138	chicken	GFF3	gff-version 3		s138_fil.fq.gz	old update
+282	chicken	GFF3	gff-version 3		s282_fil.fq.gz	old update
+144	chicken	GFF3	gff-version 3		s144_fil.fq.gz	old update
+285	chicken	GFF3	gff-version 3		s285_fil.fq.gz	old update
+143	chicken	GFF3	gff-version 3		s143_fil.fq.gz	old update
+136	chicken	GFF3	gff-version 3		s136_fil.fq.gz	old update
+127	chicken	GFF3	gff-version 3		s127_fil.fq.gz	old update
+183	chicken	GFF3	gff-version 3		s183_fil.fq.gz	old update
+245	chicken	GFF3	gff-version 3		s245_fil.fq.gz	old update
+152	chicken	GFF3	gff-version 3		s152_fil.fq.gz	old update
+184	chicken	GFF3	gff-version 3		s184_fil.fq.gz	old update
+293	chicken	GFF3	gff-version 3		s293_fil.fq.gz	old update
+155	chicken	GFF3	gff-version 3		s155_fil.fq.gz	old update
+160	chicken	GFF3	gff-version 3		s160_fil.fq.gz	old update
+279	chicken	GFF3	gff-version 3		s279_fil.fq.gz	old update
+704	chicken	GFF3	gff-version 3		704_CCGTCC_L002_R1_001.fastq.gz	old update
+703	chicken	GFF3	gff-version 3		703_ATGTCA_L002_R1_001.fastq.gz	old update
+702	chicken	GFF3	gff-version 3		702_AGTTCC_L002_R1_001.fastq.gz	old update
+705	chicken	GFF3	gff-version 3		705_GTCCGC_L002_R1_001.fastq.gz	old update
+706	chicken	GFF3	gff-version 3		706_GTGAAA_L002_R1_001.fastq.gz	old update
+701	chicken	GFF3	gff-version 3		701_AGTCAA_L002_R1_001.fastq.gz	old update
+716	chicken	GFF3	gff-version 3		716_AGTCAA_L005_R1_001.fastq.gz	old update
+718	chicken	GFF3	gff-version 3		718_CCGTCC_L005_R1_001.fastq.gz	old update
