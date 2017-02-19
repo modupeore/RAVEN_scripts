@@ -6,18 +6,22 @@ use Getopt::Long;
 use Sort::Key::Natural qw(natsort);
 use Statistics::R;
 
-my $usage="Arguments needed for '$0'
+my $usage="
+=> Sliding window to count Variants in a VCF file
+Arguments needed for '$0'
 \t-variant <Variant file (multiple separated by comma>
 \t-fasta <Reference fasta file>
 \t-bin <Sliding window size>
 \t[-chr <chromosome name (multiple separated by comma)>]
+\t[-region <chromosome region (specific location or region e.g 1-100000, only works if -chr is specified)>]
 \t[-output <Output file name>]
+
 ";
 
-my (%CHR, %GENOME);
-my($variantfile, $fastafile,$outputfile,$bin, $chrom, %chrom, @variantfile, $new);
+my (%CHR, %GENOME, %REALGENOME);
+my($variantfile, $fastafile,$outputfile,$bin, $chrom, %chrom, @variantfile, $new, $region, @regions);
 GetOptions('variant|v=s'=>\$variantfile, 'fasta|f=s'=>\$fastafile,
-		'output|o=s'=>\$outputfile, 'bin|b=s'=>\$bin, 'chr|chrom|c=s'=>\$chrom ) or die $usage;
+		'output|o=s'=>\$outputfile, 'bin|b=s'=>\$bin, 'chr|chrom|c=s'=>\$chrom, 'region|r=s'=>\$region ) or die $usage;
 
 die $usage unless ($variantfile && $fastafile && $bin);
 
@@ -34,13 +38,23 @@ if ($chrom){
 } else {
 	print "Processing All chromosomes\n";
 }
+if ($region) {
+	print "region specified $region\n";
+	$region =~ s/\s+|\s+//g;
+	if ($region =~ /\-/){
+		@regions = split("\-", $region, 2);
+	} else {
+		push @regions, $region-int($bin/2), $region+int($bin/2);
+	}
+	if ($regions[0] < 1){$regions[0] = 1;}
+}
 if ($variantfile){
 	print "Variant file selected $variantfile\n";
 	@variantfile = split (",", $variantfile);
 }
 foreach my $files (@variantfile) {
 	$files =~ s/^\s+|\s+$//g;
-	open(IN,"<", $files);
+	open(IN,"<", $files) or die "The file '$files' does not exist\n";
 	while (<IN>){
 		unless (/^#/){
 			my @all = split /\t/;
@@ -49,7 +63,13 @@ foreach my $files (@variantfile) {
 					if (exists $chrom{$all[0]}) {
 						my $verdict = int($all[1]/$bin);
 						unless ($verdict == 0) { $verdict = $verdict * $bin; } else {$verdict = 1;}
-						$CHR{$all[0]}{$verdict}{$files} = $CHR{$all[0]}{$verdict}{$files}+1;
+						if ($region){
+							if (($verdict >= $regions[0]) || ($verdict <= $regions[1])){
+								$CHR{$all[0]}{$verdict}{$files} = $CHR{$all[0]}{$verdict}{$files}+1;
+							}
+						} else {
+							$CHR{$all[0]}{$verdict}{$files} = $CHR{$all[0]}{$verdict}{$files}+1;
+						}
 					}
 				} else {
 					my $verdict = int($all[1]/$bin);
@@ -71,7 +91,9 @@ unless ($#variantfile >= 1){
 foreach my $a (natsort keys %CHR) {
 	for (my $x = 0; $x <= $GENOME{$a}; $x=$x+$bin){
 		my $v;if ($x ==0) { $v = 1; } else { $v = $x; }
-		print OUT "$a\t$v";
+		print OUT "$a";
+		print OUT "($REALGENOME{$a})";
+		print OUT "\t$v";
 		foreach my $files (@variantfile){
 			$files =~ s/^\s+|\s$//g;
 			if (exists $CHR{$a}{$v}{$files}){ print OUT "\t",$CHR{$a}{$v}{$files}; } else { print OUT "\t0"; }
@@ -116,7 +138,9 @@ foreach my $a (natsort keys %CHR) {
 	}
 	for (my $x = 0; $x <= $GENOME{$a}; $x=$x+$bin){
 		my $v;if ($x ==0) { $v = 1; } else { $v = $x; }
-		print TEMPOUT "$a\t$v";
+		print TEMPOUT "$a";
+		print TEMPOUT "($REALGENOME{$a})";
+		print TEMPOUT "\t$v";
 		foreach my $files (@variantfile){
 			$files =~ s/^\s+|\s$//g;
 			if (exists $CHR{$a}{$v}{$files}){ print TEMPOUT "\t",$CHR{$a}{$v}{$files}; } else { print TEMPOUT "\t0"; }
@@ -138,12 +162,14 @@ sub GENOME{
 	shift @genomefile;
 	foreach (@genomefile){
 		my @pieces = split /\n/;
-		my $total = 0;
+		my $total = 0; 
 		foreach my $num (1..$#pieces){
-			$total = $total + length($num);
+			$total = $total + length($pieces[$num]);
 		}
 		my $newtotal = int($total/$bin)*$bin; if ($newtotal < $total){ $newtotal= $newtotal+$bin;}
 		$GENOME{$pieces[0]} = $newtotal;
+		$REALGENOME{$pieces[0]} = $total;
+		print "$pieces[0]\t$total\t$newtotal\n";
 	}
 	$/ = "\n";
 }
@@ -187,7 +213,8 @@ RCODE
 library("reshape2")
 hh <- melt(gg, id=c("chrom","position")) #convert to long format
 myplot = ggplot(hh) +
-geom_line(aes(x=position,y=value,group=chrom, color=variable)) +
+geom_line(aes(x=position,y=value, color=variable)) +
+expand_limits(y=-1) +
 facet_grid(.~chrom,scales="free")
 RCODE
 	}
