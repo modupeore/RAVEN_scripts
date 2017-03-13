@@ -4,7 +4,7 @@ use Pod::Usage;
 use Getopt::Long;
 use Sort::Key::Natural qw(natsort);
 
-my ($split, $count, %REALGENOME);
+my ($split, $count, %REALGENOME,$header);
 
 my $usage ="
 => Reference file (.fa) manipulation
@@ -33,20 +33,24 @@ sub GENOME {
                 foreach my $num (1..$#pieces){
                         $total .= $pieces[$num];
                 }
-                $pieces[0] =~ /(\S*)\s.*/;
-                $REALGENOME{$pieces[0]} = $total;
+                $pieces[0] =~ /(\S*).*/; $header = $1;
+		unless ($header =~ /^chr/) {$header = "chr".$header; } 
+		$total = substr($total,0,-1);
+                $REALGENOME{$header} = $total;
         }
 	$/ = "\n";
 }
 sub SPLITGENOME{
+	open(OUT2, ">", "anotherall.fa");
 	GENOME($_[0]);
 	foreach my $key (natsort keys %REALGENOME){
-		$key =~ /(\S*)\s.*/;
 		`mkdir -p other`;
-		my $name = "other/$1".'.fa';
+		my $name = "other/$key".'.fa';
 		open (OUT, ">", $name ) or die "Can't open $name\n";
 		print OUT ">chr".$key."\n";
 		print OUT "$REALGENOME{$key}\n";
+		print OUT2 ">chr".$key."\n";
+                print OUT2 "$REALGENOME{$key}\n";
 		close OUT;
 	}
 }
@@ -56,8 +60,7 @@ sub GENOMECOUNT{
 	my $name = "genomecount.txt";
         open (OUT, ">", $name ) or die "Can't open $name\n";
         foreach my $key (natsort keys %REALGENOME){
-                $key =~ /(\S*)\s.*/;
-                my $name = "genomecount.txt";
+                my $name = "genomecount.txt"; 
                 print OUT $key,"\t",length($REALGENOME{$key}),"\n";
         }
 	close OUT;
