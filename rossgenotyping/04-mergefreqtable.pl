@@ -20,7 +20,7 @@ my @prefix;
 my $out = "merge.table.txt";
 open (OUT,">", $out);
 open (OUT2, ">final-merge.table.txt");
-my $libs = 12; #select 1 [1 or more] or 6 [2 or more] or 12  [all libs]
+my $libs = 1; #select 1 [1 or more] or 6 [2 or more] or 12  [all libs]
 # - - - - - M A I N - - - - - - - - - - - - - - - - - - -
 
 foreach my $no (0..$#ARGV){
