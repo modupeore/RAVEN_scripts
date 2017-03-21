@@ -14,8 +14,8 @@ use File::stat;
 use DateTime;
 use POSIX qw( ceil );
 use lib '/home/modupe/SCRIPTS/SUB';
-#use routine;
-#use passw;
+use routine;
+use passw;
 
 # #CREATING LOG FILES
 my $std_out = '/home/modupe/.LOG/RavTAD-'.`date +%m-%d-%y_%T`; chomp $std_out; $std_out = $std_out.'.log';
@@ -109,42 +109,41 @@ print "\n\n\tCONNECTING TO THE DATABASE :".`date`."\n\n";
 $dbh = mysql();
 if ($deletenotdone) {DELETENOTDONE();}
 
-foreach my $SubNewFolder (@NewDirectory) {
-  if ($SubNewFolder =~ /^\w.*_(\d.*)$/){
-    CHECKING();
-    unless (exists $Hashresults{$1}){
-      if (exists $Birdresults{$1}){
-        $parsedinput = "$in1/$SubNewFolder";
-				@foldercontent = split("\n", `find $parsedinput`); #get details of the folder
-				foreach (grep /\.gtf/, @foldercontent) { unless (`head -n 3 $_ | wc -l` <= 0 && $_ =~ /skipped/) { $transcriptsgtf = $_; } }
-				$accepted = (grep /accepted_hits.bam/, @foldercontent)[0];
-				$alignfile = (grep /summary.txt/, @foldercontent)[0];
-				$genesfile = (grep /genes.fpkm/, @foldercontent)[0];
-				$isoformsfile = (grep /isoforms.fpkm/, @foldercontent)[0];
-				$deletionsfile = (grep /deletions.bed/, @foldercontent)[0];
-				$insertionsfile = (grep /insertions.bed/, @foldercontent)[0];
-				$junctionsfile = (grep /junctions.bed/, @foldercontent)[0];
-				$run_log = (grep /logs\/run.log/, @foldercontent)[0];
-				$samfile = (grep /.sam$/, @foldercontent)[0];
-				$variantfile = (grep /.vcf$/, @foldercontent)[0]; 
-				$vepfile = (grep /.vep.txt$/, @foldercontent)[0];
-				$annovarfile = (grep /anno.txt$/, @foldercontent)[0];
-				$htseqcount = (grep /.counts$/, @foldercontent)[0];
-				LOGFILE();
-        my $verdict = PARSING($1,$parsedinput);
+if ($in1 =~ /\w.*_(\d+)/){
+  CHECKING();
+  unless (exists $Hashresults{$1}){
+    if (exists $Birdresults{$1}){
+      $parsedinput = $in1;
+			@foldercontent = split("\n", `find $parsedinput`); #get details of the folder
+			foreach (grep /\.gtf/, @foldercontent) { unless (`head -n 3 $_ | wc -l` <= 0 && $_ =~ /skipped/) { $transcriptsgtf = $_; } }
+			$accepted = (grep /accepted_hits.bam/, @foldercontent)[0];
+			$alignfile = (grep /summary.txt/, @foldercontent)[0];
+			$genesfile = (grep /genes.fpkm/, @foldercontent)[0];
+			$isoformsfile = (grep /isoforms.fpkm/, @foldercontent)[0];
+			$deletionsfile = (grep /deletions.bed/, @foldercontent)[0];
+			$insertionsfile = (grep /insertions.bed/, @foldercontent)[0];
+			$junctionsfile = (grep /junctions.bed/, @foldercontent)[0];
+			$run_log = (grep /logs\/run.log/, @foldercontent)[0];
+			$samfile = (grep /.sam$/, @foldercontent)[0];
+			$variantfile = (grep /.vcf$/, @foldercontent)[0]; 
+			$vepfile = (grep /.vep.txt$/, @foldercontent)[0];
+			$annovarfile = (grep /anno.txt$/, @foldercontent)[0];
+			$htseqcount = (grep /.counts$/, @foldercontent)[0];
+			LOGFILE();
+			my $verdict = PARSING($1,$parsedinput);
 				
-        #progress report
-        if ($verdict == 1) {
-          open (NOTE, ">>$progressnote");
-          print NOTE "Subject: Update notes : $jobid\n\nCompleted library\t$1\n";
-          system "sendmail $email < $progressnote"; close NOTE;
-        } #end if
-      } else {
-        print "\nSkipping \"library_$1\" in \"$SubNewFolder\" folder because it isn't in birdbase\n$mystderror\n";
-      } #end if
-    }else {print "\nLibrary => $1 exists in the database\n";} #end unless
-  } #end if	 
-} #end foreach
+			#progress report
+			if ($verdict == 1) {
+				open (NOTE, ">>$progressnote");
+				print NOTE "Subject: Update notes : $jobid\n\nCompleted library\t$1\n";
+				system "sendmail $email < $progressnote"; close NOTE;
+			} #end if
+		} else {
+			print "\nSkipping \"library_$1\" in \"$in1\" folder because it isn't in birdbase\n$mystderror\n";
+		} #end if
+	}else {print "\nLibrary => $1 exists in the database\n";} #end unless
+} #end if	 
+#} #end foreach
 #SUMMARYstmts(); 
 system "rm -rf $progressnote";
 # DISCONNECT FROM THE DATABASE
@@ -383,7 +382,7 @@ sub GENES_FPKM { #subroutine for getting gene information
 					print "NOTICE:\t Importing $diffexpress expression information for $_[0] to isoforms_fpkm table ...";
 					#import into ISOFORMSFPKM table;
 					open(FPKM, "<", $isoformsfile) or die "\nERROR:\t Can not open file $isoformsfile\n";
-					$syntax = "insert into isoforms_fpkm (library_id, gene_id, gene_short_name, chrom_no, chrom_start, chrom_stop, coverage, fpkm, fpkm_conf_low, fpkm_conf_high, fpkm_status ) values (?,?,?,?,?,?,?,?,?,?,?)";
+					$syntax = "insert into isoforms_fpkm (library_id, tracking_id, gene_id, gene_short_name, chrom_no, chrom_start, chrom_stop, coverage, fpkm, fpkm_conf_low, fpkm_conf_high, fpkm_status ) values (?,?,?,?,?,?,?,?,?,?,?,?)";
 					$sth = $dbh->prepare($syntax);
 					while (<FPKM>){
 						chomp;
@@ -391,7 +390,7 @@ sub GENES_FPKM { #subroutine for getting gene information
 						unless ($track eq "tracking_id"){ #check & specifying undefined variables to null
 							if($coverage =~ /-/){$coverage = undef;}
 							my ($chrom_no, $chrom_start, $chrom_stop) = $locus =~ /^(.+)\:(.+)\-(.+)$/; $chrom_start++;
-							$sth ->execute($_[0], $gene, $gene_name, $chrom_no, $chrom_start, $chrom_stop, $coverage, $fpkm, $fpkm_low, $fpkm_high, $fpkm_stat ) or die "\nERROR:\t Complication in genes_fpkm table, consult documentation\n";
+							$sth ->execute($_[0], $track, $gene, $gene_name, $chrom_no, $chrom_start, $chrom_stop, $coverage, $fpkm, $fpkm_low, $fpkm_high, $fpkm_stat ) or die "\nERROR:\t Complication in genes_fpkm table, consult documentation\n";
 						}
 					} close FPKM;
 					print " Done\n";
@@ -661,7 +660,7 @@ sub PARSING {
       if ($htseqcount){ HTSEQ($htseqcount); } #htseqcount details to the database.
 
       #variant analysis
-      if ($refgenome =~ /Galgal4/){$refgenomename = "chicken";}
+      if ($refgenome =~ /Galgal/){$refgenomename = "chicken";}
       VARIANTS($lib_id, $accepted, $refgenomename, $annotationfile);
 
       #Finally : the last update. transcripts_summary table updating status column with 'done'
