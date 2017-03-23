@@ -15,7 +15,7 @@ To use : '$0'
 ";
 my ($variant, $columns, $output);
 GetOptions('V|v=s'=>\$variant, 'F|f=s'=>\$columns , 'O|o=s'=>\$output) or die $usage;
-die $usage if(!$variant || !$columns || !$output);
+die "Incomplete Arguments!\n$usage" if(!$variant || !$columns || !$output);
 
 # - - - - - G L O B A L V A R I A B L E S - - - - - - - - -
 
@@ -49,7 +49,7 @@ while (<COMMON>){
 		undef %info; #clean the info hash
 		foreach (@info) {
 			my @theinfo = split("\=", $_, 2);
-			$info{$theinfo[0]} = $theinfo[1];
+			$info{uc($theinfo[0])} = $theinfo[1];
 		}
 		
 		#estimating AF from FORMAT column
@@ -110,7 +110,7 @@ while (<COMMON>){
 		#print out columns specified and the new file
 		
 		print OUT $commonline[$header{"#CHROM"}],"\t", $commonline[$header{"POS"}];
-		foreach (sort keys %filter){
+		foreach (sort {$a <=> $b} keys %filter){
 			unless ( ($filter{$_} =~ /CHROM/) || ($filter{$_} =~ /POS/)){
 				if (exists $header{$filter{$_}}){
 					print OUT "\t$commonline[$header{$filter{$_}}]";

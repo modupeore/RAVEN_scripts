@@ -14,7 +14,7 @@ To use : '$0'
 @ARGV >= 2 or die $usage;
 
 # - - - - - G L O B A L V A R I A B L E S - - - - - - - - -
-my (%COMPARE, %header, @headerline, %ALTCOMPARE, %REFCOMPARE, %AFCOMPARE, %AFSCOMPARE); 
+my (%COMPARE, %header, @headerline, %ALTCOMPARE, %REFCOMPARE, %AFCOMPARE, %AFSCOMPARE, %ANN, %FUNC); 
 my ($line, $header);
 my @prefix;
 my $out = "merge.table.txt";
@@ -47,6 +47,16 @@ foreach my $no (0..$#ARGV){
 					}
 				} else {
 					$REFCOMPARE{$commonline[$header{'CHROM'}]}{$commonline[$header{'POS'}]} = $commonline[$header{'REF'}];
+				}
+				
+				#getting annotation information
+				if (exists $header{'GENE.REFGENE'}) {
+					$ANN{$commonline[$header{'CHROM'}]}{$commonline[$header{'POS'}]} = "$commonline[$header{'GENE.REFGENE'}]";
+					if ($commonline[$header{'FUNC.REFGENE'}] eq "exonic"){
+						$FUNC{$commonline[$header{'CHROM'}]}{$commonline[$header{'POS'}]} = "$commonline[$header{'EXONICFUNC.REFGENE'}]";
+					}else {
+						$FUNC{$commonline[$header{'CHROM'}]}{$commonline[$header{'POS'}]} = "$commonline[$header{'FUNC.REFGENE'}]";
+					}
 				}
 				
 				#summing the AF(s) from GATK & custom only if the filter has PASS, so as not to skew the AF.
@@ -101,11 +111,17 @@ foreach my $prefix (sort {$a cmp $b} @prefix){
 }
 print OUT "\t\t\n"; #mergeALT, avgAD, avgnewAF;
 print OUT "CHROM\tPOS\tREF\t";
+	
+	
 foreach my $prefix (sort {$a cmp $b} @prefix){
-	print OUT "ALT\tFILTER\tAF\tNEW-AF\t";
+	print OUT "ALT\tFILTER\t";
+	if (exists $header{'GENE.REFGENE'}) { print OUT "GENE\tFUNC\t"; }
+	print OUT "AF\tNEW-AF\t";
 }
 print OUT "mergeALT\tavgAF\tmedAF\tavgnew-AF\tmednew-AF\n";
-print OUT2 "CHROM\tPOS\tREF\tmergeALT\tavgnew-AF\tmednew-AF\n";
+print OUT2 "CHROM\tPOS\tREF\tmergeALT\t";
+if (exists $header{'GENE.REFGENE'}) { print OUT2 "GENE\tFUNC\t"; }
+print OUT2 "avgnew-AF\tmednew-AF\n";
 
 #print OUT content
 my ($homoalt, $homoref, $hetero) = (0,0,0);
@@ -117,18 +133,22 @@ open (OUT5, ">hetero-average-freq.txt");
 open (OUT6, ">homo-alt-median-freq.txt");
 open (OUT7, ">homo-ref-median-freq.txt");
 open (OUT8, ">hetero-median-freq.txt");
-print OUT3 "CHROM\tPOS\tREF\tmergeALT\tavgnew-AF\n";
-print OUT4 "CHROM\tPOS\tREF\tmergeALT\tavgnew-AF\n";
-print OUT5 "CHROM\tPOS\tREF\tmergeALT\tavgnew-AF\n";
-print OUT6 "CHROM\tPOS\tREF\tmergeALT\tmednew-AF\n";
-print OUT7 "CHROM\tPOS\tREF\tmergeALT\tmednew-AF\n";
-print OUT8 "CHROM\tPOS\tREF\tmergeALT\tmednew-AF\n";
+print OUT3 "CHROM\tPOS\tREF\tmergeALT\t"; if (exists $header{'GENE.REFGENE'}) { print OUT3 "GENE\tFUNC\t"; } print OUT3 "avgnew-AF\n";
+print OUT4 "CHROM\tPOS\tREF\tmergeALT\t"; if (exists $header{'GENE.REFGENE'}) { print OUT4 "GENE\tFUNC\t"; } print OUT4 "avgnew-AF\n";
+print OUT5 "CHROM\tPOS\tREF\tmergeALT\t"; if (exists $header{'GENE.REFGENE'}) { print OUT5 "GENE\tFUNC\t"; } print OUT5 "avgnew-AF\n";
+print OUT6 "CHROM\tPOS\tREF\tmergeALT\t"; if (exists $header{'GENE.REFGENE'}) { print OUT6 "GENE\tFUNC\t"; } print OUT6 "avgnew-AF\n";
+print OUT7 "CHROM\tPOS\tREF\tmergeALT\t"; if (exists $header{'GENE.REFGENE'}) { print OUT7 "GENE\tFUNC\t"; } print OUT7 "avgnew-AF\n";
+print OUT8 "CHROM\tPOS\tREF\tmergeALT\t"; if (exists $header{'GENE.REFGENE'}) { print OUT8 "GENE\tFUNC\t"; } print OUT8 "avgnew-AF\n";
 
 foreach my $chrom (natsort keys %COMPARE) {
 	foreach my $position (sort {$a <=> $b} keys %{ $COMPARE{$chrom} } ) {
 		if (exists $ALTCOMPARE{$chrom}{$position}) { #if filter(s) has at least PASS
 			print OUT "$chrom\t$position\t$REFCOMPARE{$chrom}{$position}\t";
 			print OUT2 "$chrom\t$position\t$REFCOMPARE{$chrom}{$position}\t";
+			if (exists $header{'GENE.REFGENE'}){
+				print OUT "$ANN{$chrom}{$position}\t$FUNC{$chrom}{$position}\t";
+				print OUT2 "$ANN{$chrom}{$position}\t$FUNC{$chrom}{$position}\t";
+			}
 			foreach my $prefix (sort {$a cmp $b} @prefix ){
 				if (exists $COMPARE{$chrom}{$position}{$prefix}){
 					print OUT "$COMPARE{$chrom}{$position}{$prefix}\t";
@@ -150,25 +170,37 @@ foreach my $chrom (natsort keys %COMPARE) {
 			print OUT2 "$afaverage\t$afmedian\n";
 			
 			#Frequencies of AFs
-			if ($afaverage > 0.9) {	 #homo alt
-				print OUT3 "$chrom\t$position\t$REFCOMPARE{$chrom}{$position}\t$ALTCOMPARE{$chrom}{$position}\t$afaverage\n";
+			if ($afaverage > 0.99) {	 #homo alt
+				print OUT3 "$chrom\t$position\t$REFCOMPARE{$chrom}{$position}\t$ALTCOMPARE{$chrom}{$position}\t";
+				if (exists $header{'GENE.REFGENE'}){ print OUT3 "$ANN{$chrom}{$position}\t$FUNC{$chrom}{$position}\t"; }
+				print OUT3 "$afaverage\n";
 				$homoalt++;
-			} elsif ($afaverage < 0.1) { #homo ref
-				print OUT4 "$chrom\t$position\t$REFCOMPARE{$chrom}{$position}\t$ALTCOMPARE{$chrom}{$position}\t$afaverage\n";
+			} elsif ($afaverage < 0.01) { #homo ref
+				print OUT4 "$chrom\t$position\t$REFCOMPARE{$chrom}{$position}\t$ALTCOMPARE{$chrom}{$position}\t";
+				if (exists $header{'GENE.REFGENE'}){ print OUT4 "$ANN{$chrom}{$position}\t$FUNC{$chrom}{$position}\t"; }
+				print OUT4 "$afaverage\n";
 				$homoref++;
 			} else {
-				print OUT5 "$chrom\t$position\t$REFCOMPARE{$chrom}{$position}\t$ALTCOMPARE{$chrom}{$position}\t$afaverage\n";
+				print OUT5 "$chrom\t$position\t$REFCOMPARE{$chrom}{$position}\t$ALTCOMPARE{$chrom}{$position}\t";
+				if (exists $header{'GENE.REFGENE'}){ print OUT5 "$ANN{$chrom}{$position}\t$FUNC{$chrom}{$position}\t"; }
+				print OUT5 "$afaverage\n";
 				$hetero++;
 			}
 			
-			if ($afmedian > 0.9) { #homo alt
-				print OUT6 "$chrom\t$position\t$REFCOMPARE{$chrom}{$position}\t$ALTCOMPARE{$chrom}{$position}\t$afaverage\n";
+			if ($afmedian > 0.99) { #homo alt
+				print OUT6 "$chrom\t$position\t$REFCOMPARE{$chrom}{$position}\t$ALTCOMPARE{$chrom}{$position}\t";
+				if (exists $header{'GENE.REFGENE'}){ print OUT6 "$ANN{$chrom}{$position}\t$FUNC{$chrom}{$position}\t"; }
+				print OUT6 "$afaverage\n";
 				$medhomoalt++;
-			} elsif ($afmedian < 0.1) { #homo ref
-				print OUT7 "$chrom\t$position\t$REFCOMPARE{$chrom}{$position}\t$ALTCOMPARE{$chrom}{$position}\t$afaverage\n";
+			} elsif ($afmedian < 0.01) { #homo ref
+				print OUT7 "$chrom\t$position\t$REFCOMPARE{$chrom}{$position}\t$ALTCOMPARE{$chrom}{$position}\t";
+				if (exists $header{'GENE.REFGENE'}){ print OUT7 "$ANN{$chrom}{$position}\t$FUNC{$chrom}{$position}\t"; }
+				print OUT7 "$afaverage\n";
 				$medhomoref++;
 			} else {
-				print OUT8 "$chrom\t$position\t$REFCOMPARE{$chrom}{$position}\t$ALTCOMPARE{$chrom}{$position}\t$afaverage\n";
+				print OUT8 "$chrom\t$position\t$REFCOMPARE{$chrom}{$position}\t$ALTCOMPARE{$chrom}{$position}\t";
+				if (exists $header{'GENE.REFGENE'}){ print OUT8 "$ANN{$chrom}{$position}\t$FUNC{$chrom}{$position}\t"; }
+				print OUT8 "$afaverage\n";
 				$medhetero++;
 			}
 		} 
@@ -185,7 +217,7 @@ close OUT7;
 close OUT8;
 print "Finished\n";
 print "
-criteria 0.1;
+criteria 0.01;
 Average
 \t0/0 = $homoref
 \t0/1 = $hetero
