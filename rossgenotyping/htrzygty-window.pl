@@ -5,10 +5,12 @@ use Pod::Usage;
 use Getopt::Long;
 use POSIX qw(ceil);
 use Sort::Key::Natural qw(natsort);
+use Statistics::R;
 
 ##### Usage Documentation
 my $usage="
-=> Measuring heterozygosity ratios following Rubin et al. Nature 2010 equation.
+=> Measuring heterozygosity ratios following Rubin et al. Nature 2010 & others equation.
+		and plotting the ZH scores using R.
 Arguments needed for '$0'
 \t-v|variant\t< Variant file (AF flag will be used) > 
 \t\t\t[ Multiple variant files should be separated by comma ]
@@ -33,13 +35,14 @@ Institution: University of Delaware
 ";
 
 ##### Options of usage
-my($variantfile, $tablefile, $fastafile,$outputfile,$window, $step, $chrom,$region);
+my($variantfile, $tablefile, $fastafile,$outputfile,$window,$step, $chrom,$region);
+my ($tables, $variants) = (0,0);
 GetOptions('variant|v=s'=>\$variantfile, 't|table=s'=>\$tablefile, 'fasta|f=s'=>\$fastafile,
 		'output|o=s'=>\$outputfile, 'w|window=s'=>\$window, 's|step=s'=>\$step, 'chr|chrom|c=s'=>\$chrom, 'region|r=s'=>\$region ) or die $usage;
 
-die $usage unless ($fastafile && $window && $step);
-die $usage unless ($variantfile || $tablefile);
-die $usage if ($variantfile && $tablefile);
+die "Syntax Error$usage" unless ($fastafile && $window && $step);
+die "Input file not provided$usage" unless ($variantfile || $tablefile);
+die "Specify one type of input$usage" if ($variantfile && $tablefile);
 
 ####Logs
 my $date = `date +%m-%d-%y_%T`; chomp $date;
@@ -50,8 +53,10 @@ open(STDERR, '>', "$std_err") or die "Error file doesn't exist";
 
 ##### Global options
 my ( %chrom, @variantfile, @heterozygosity, @regions);
-my (%CHR, %GENOME, %REALGENOME, %header, %info);
+my (%CHR, %GENOME, %REALGENOME, %header, %info, %GENENAME);
 my (%AFmax, %AFmin, %SNPcount, %RUNTHRU, %NEWSTEP);
+
+my %removehash  = map {$_ => 1} qw|W LGE64 16|; #chromosomes to remove
 
 ##### Code
 print "... Processing genome ";
@@ -84,14 +89,16 @@ if ($region) {
 if ($variantfile){
 	print "Variant file selected $variantfile\n";
 	@variantfile = split (",", $variantfile);
+	$variants = 1;
 }
 if ($tablefile){
 	print "Table file selected $tablefile\n";
 	@variantfile = split (",", $tablefile);
+	$tables = 1;
 }
 
 #sorting the chromosomes into steps.
-print "... Processing steps for the chromosome ";
+print "... Processing steps for the chromosome with Window = $window and Step = $step ";
 foreach my $gchr (natsort keys %REALGENOME){
 	my $checklimit = 1;
 	if ($chrom){
@@ -123,15 +130,18 @@ foreach my $gchr (natsort keys %REALGENOME){
 	}
 } #end foreach real genome
 print "... Done ",`date`,"\n";
-
 #processing each variant file
 foreach my $files (@variantfile) {
 	$files =~ s/^\s+|\s+$//g;
-	open(IN,"<", $files) or die "The file '$files' does not exist\n";
-	if ($tablefile) { #if table file
+	open(IN,"<",$files) or die "The file \'$files\' does not exist\n";
+	#if ($tablefile) { print "yes"; die; } else { print "no"; die;}
+	#die "main";
+	if ($tablefile) {
 		print "... Processing table file => $files";
-		MAIN: while (<IN>){ chomp;
-			my @all = split /\t/; 
+		print "\n... Processing table file => $files";
+		MAIN: while (<IN>){ chomp; 
+			my $line = $_; 
+			my @all = split (/\t/, $line); 
 			if (exists $RUNTHRU{$all[0]}) { #checking the chromosome exists in the reference genome file
 				my $ident = (int($all[1]/$step) * $step);
 				my $newident = $ident - $window;
@@ -144,6 +154,15 @@ foreach my $files (@variantfile) {
 						unless ($AF =~ /,/){ #removing multiple AF for 1 position.
 							if ($AF < 0.01 || $AF > 0.99) {print "homozygous allele @ $all[0]:$all[1] won't be computed\n";}
 							else {
+								#getting the gene information
+								$all[4] =~ s/^\s+|\s+$//g;
+								if (exists $GENENAME{$all[0]}{$stepz}){ 
+									$GENENAME{$all[0]}{$stepz} = "$GENENAME{$all[0]}{$stepz},$all[4]";
+								} else {
+									$GENENAME{$all[0]}{$stepz} = $all[4];
+								} # end else getting the genename
+								#end of getting the gene information
+								
 								push my @newAF, $AF, 1-$AF;
 								my ($maxAF, $minAF)= &range(\@newAF); #getting the maximum and minimum AF
 								$AFmin{$all[0]}{$stepz}= $AFmin{$all[0]}{$stepz} + $minAF;
@@ -152,9 +171,10 @@ foreach my $files (@variantfile) {
 							} #end if AF
 						} #end unless multiple AF
 					} #end if window region
-					elsif ($first > $all[1]){next MAIN;}
+					#next MAIN if $first > $all[1];
+					#elsif ($first > $all[1]){next MAIN;}
 				} #end foreach step
-			}
+			} #print $line,"\n";
 		} #end while
 		print "... Done ",`date`;
 	} #end if table file
@@ -203,12 +223,13 @@ foreach my $files (@variantfile) {
 		} #end while
 		print "... Done ",`date`;
 	} #end if variant file
+	else { die "Not matching variables\n"; }
 	my ($j,$i) = (0,0);
 	#computing windows & printing OUT
 	print "... Computing Heterozygosity ";
-	$outputfile ||="output.txt"; $outputfile = @{ open_unique($outputfile) }[1]; $outputfile =~ /^(.*)\..+$/; #outputfile name
-	open (OUT, ">", $outputfile) or die;
-	print OUT "CHROM\tSTART\tEND\tnumber\tSNPcount\tHeterozygosity\n";
+	$outputfile ||="output.txt"; my $fileout = @{ open_unique($outputfile) }[1];#outputfile name
+	open (OUT, ">", $fileout) or die;
+	print OUT "CHROM\tSTART\tEND\tGENE\tnumber\tSNPcount\tHeterozygosity\n";
 
 	foreach my $schr (natsort %SNPcount){
 		foreach my $stepy (sort {$a <=> $b} keys %{$SNPcount{$schr}}){
@@ -217,7 +238,10 @@ foreach my $files (@variantfile) {
 				my $heterozygosity = sprintf("%.3f",((2*$AFmin{$schr}{$stepy}*$AFmax{$schr}{$stepy})/($finalAF*$finalAF)));
 				push @heterozygosity, $heterozygosity;
 				my ($start, $end) = split(/\-/,$RUNTHRU{$schr}{$stepy});
-				print OUT "$schr\t$start\t$end\t$finalAF\t$SNPcount{$schr}{$stepy}\t$heterozygosity\n";
+				my %alls = map {$_ => 1} split(",", $GENENAME{$schr}{$stepy});
+				my @array = map {$_; } sort {$a <=> $b} keys %alls ;
+				my $genes = join (",", @array);
+				print OUT "$schr\t$start\t$end\t$genes\t$finalAF\t$SNPcount{$schr}{$stepy}\t$heterozygosity\n";
 				$i++;
 				
 				#unless ($SNPcount{$schr}{$stepy} == $finalAF){ print "Dont match s$SNPcount{$schr}{$stepy}","c\ts$finalAF","c\n"; }
@@ -236,9 +260,9 @@ foreach my $files (@variantfile) {
 	print "... Computing Z transformed heterozygosity ";
 	my $mean = &average(\@heterozygosity);
 	my $stddev = &stdev(\@heterozygosity);
-	$outputfile ||="output.txt"; $outputfile = @{ open_unique($outputfile) }[1]; $outputfile =~ /^(.*)\..+$/; #outputfile name
-	open (OUT2, ">", $outputfile) or die;
-	print OUT2 "CHROM\tSTART\tEND\tnumber\tSNPcount\tHeterozygosity\tZHeterozygosity\n";
+	my $fileout2 = "ZHresult-".$fileout; #outputfile name
+	open (OUT2, ">", $fileout2) or die;
+	print OUT2 "CHROM\tSTART\tEND\tGENE\tnumber\tSNPcount\tHeterozygosity\tZHeterozygosity\n";
 	
 	foreach my $schr (natsort %SNPcount){
 		foreach my $stepy (sort {$a <=> $b} keys %{$SNPcount{$schr}}){
@@ -247,7 +271,10 @@ foreach my $files (@variantfile) {
 				my $heterozygosity = sprintf("%.3f",((2*$AFmin{$schr}{$stepy}*$AFmax{$schr}{$stepy})/($finalAF*$finalAF)));
 				my $zh = sprintf("%.3f",(($heterozygosity - $mean)/$stddev));
 				my ($start, $end) = split(/\-/,$RUNTHRU{$schr}{$stepy});
-				print OUT2 "$schr\t$start\t$end\t$finalAF\t$SNPcount{$schr}{$stepy}\t$heterozygosity\t$zh\n";
+				my %alls = map {$_ => 1} split(",", $GENENAME{$schr}{$stepy});
+				my @array = map {$_; } sort {$a <=> $b} keys %alls ;
+				my $genes = join (",", @array);
+				print OUT2 "$schr\t$start\t$end\t$genes\t$finalAF\t$SNPcount{$schr}{$stepy}\t$heterozygosity\t$zh\n";
 			} else {
 				#print OUT2 "$schr\t$RUNTHRU{$schr}{$stepy}\t$finalAF\t$SNPcount{$schr}{$stepy}\n";
 			}
@@ -255,88 +282,78 @@ foreach my $files (@variantfile) {
 	} #end foreach compute window
 	close OUT2;
 	print "... Done ",`date`;
+	
+	#R scripts
+	open(IN, $fileout2) or die "Can't open $fileout2\n"; my @inputall = <IN>; close(IN);
+	$fileout2 = "forR-".$fileout; #outputfile name
+	open (OUT, ">", $fileout2) or die;
+	my $originalfileout = "original-$fileout"; open (OUT3, ">", $originalfileout) or die;
+	my $imptfileout = "impt-$fileout"; open (OUT2, ">", $imptfileout) or die;
+	my $header = shift @inputall;
+	$i = 0;
+	print OUT "No\t$header"; print OUT3 "No\t$header";
+	foreach my $for (@inputall){
+	  chomp $for;
+	  my @id = split(/\t/, $for);
+	  if ($id[0] =~ /chr/) { $id[0] =~ s/chr//ig };
+	  $id[0] = uc($id[0]);
+	  unless (exists $removehash{$id[0]}){
+			$i++; 
+	    print OUT $i,"\t",$id[0],"\t"; print OUT3 $i,"\t",$id[0],"\t";
+	    foreach my $j (1..$#id-1){ print OUT $id[$j],"\t"; print OUT3 $id[$j],"\t";}
+	    print OUT3 $id[$#id],"\n";
+			if ($id[$#id] > 0){ $id[$#id] = $id[$#id]*-1; }
+	    if ($id[$#id] <= -4) {print OUT2 $for,"\n"; }
+	    print OUT $id[$#id],"\n";
+	  }
+	}
+	close (OUT); close (OUT2); close(OUT3);
+	
+	#picture
+	my $picture = "ZH-$fileout"; my $picture2 = "plot-$fileout";
+	$picture =~ s/\..+$/\.png/g; $picture2 =~ s/\..+$/\.png/g;
+	my $path = $ENV{'PWD'};
+	my $R_code = <<"RCODE";
+setwd("$path");
+library(ggplot2);
+png(filename="$picture", width=960, height=480, res = 200);
+info = read.table("$fileout2", header=T)
+info\$CHROM <- factor(info\$CHROM, levels=unique(as.character(info\$CHROM)) )
+p <- ggplot(data = info, aes(x = No, y = ZHeterozygosity, color=CHROM)) +
+  geom_point(stat = "identity") + labs(x = "Chromosome", y=expression(ZH[ W]))
+if (min(info\$ZHeterozygosity) <= -6) { p = p + geom_hline(yintercept=c(-4,-6), color="black", linetype="dashed") 
+} else { p = p + geom_hline(yintercept=-4, color="black", linetype="dashed") }
+p + facet_grid(~CHROM, scales = 'free_x', space = 'free_x', switch = 'x') + 
+  theme_classic() + 
+  theme(axis.text.x = element_blank(),
+        axis.ticks.x = element_blank(),
+        panel.spacing = unit(0, "lines")) +
+  theme(legend.position="none") +
+  scale_x_continuous(expand = c(0, 0))
+dev.off()
+
+png(filename="$picture2", width=480, height=480, res = 200);
+info = read.table("$originalfileout", header=T)
+temp <- paste("mu == ", 0)
+other <- paste("sigma == ", 1)
+h <- ggplot(info,aes(x = ZHeterozygosity)) + 
+  theme_classic() + 
+  theme(legend.position="none") +
+  geom_histogram(binwidth = .5,aes(fill =..count..)) +
+  scale_fill_gradient("", low = "darkgrey", high = "navy") +
+  labs(x=expression(ZH[ W]), y = "frequency")
+h
+dev.off()
+RCODE
+
+	my $R = Statistics::R->new();
+	$R->startR;
+	$R->send($R_code);
+	$R->stopR();	
+	
 } #end foreach input file
 
-#		
-#	}
-#	}
-#}
-#open (OUT, ">$outputfile"); #save to outputfile
-#print OUT "chrom\tposition";
-#unless ($#variantfile >= 1){
-#	print OUT "\tcount\n";
-#} else { 
-#	foreach my $files (@variantfile){ $files =~ s/^\s+|\s$//g; print OUT "\t$files"; }
-#	print OUT "\n";
-#}
-#foreach my $a (natsort keys %CHR) {
-#	for (my $x = 0; $x <= $GENOME{$a}; $x=$x+$window){
-#		my $v;if ($x ==0) { $v = 1; } else { $v = $x; }
-#		print OUT "$a";
-#		print OUT "($REALGENOME{$a})";
-#		print OUT "\t$v";
-#		foreach my $files (@variantfile){
-#			$files =~ s/^\s+|\s$//g;
-#			if (exists $CHR{$a}{$v}{$files}){ print OUT "\t",$CHR{$a}{$v}{$files}; } else { print OUT "\t0"; }
-#		}
-#		print OUT "\n";
-#	}
-#}
-#close (OUT);
-
-
-#Rscript($outputfile, $picture);
-
-#my $tempout = @{ open_unique(".tempout.txt")}[1]; #ploting 10 chrs in one pdf
-#my ($count, $counter) = (1,1);
-#my $pictures= $index."-".$count.".png";
-#open (TEMPOUT, ">$tempout");
-#print TEMPOUT "chrom\tposition";
-#unless ($#variantfile >= 1){
-#	print TEMPOUT "\tcount\n";
-#} else { 
-#	foreach my $files (@variantfile){ $files =~ s/^\s+|\s$//g; print TEMPOUT "\t$files"; }
-#	print TEMPOUT "\n";
-#}
-#foreach my $a (natsort keys %CHR) {
-#	unless ($a eq $new) {
-#		if ($counter > 10) {
-#			$pictures= $index."-".$count.".png";
-#			$count++;
-#			Rscript($tempout, $pictures);
-#			open (TEMPOUT, ">$tempout");
-#			print TEMPOUT "chrom\tposition";
-#			unless ($#variantfile >= 1){
-#				print TEMPOUT "\tcount\n";
-#			} else { 
-#			foreach my $files (@variantfile){ $files =~ s/^\s+|\s$//g; print TEMPOUT "\t$files"; }
-#			print TEMPOUT "\n";
-#			}
-#			$counter = 1;
-#		}
-#		else {
-#			$counter++;
-#		}
-#		$new = $a;
-#	}
-#	for (my $x = 0; $x <= $GENOME{$a}; $x=$x+$bin){
-#		my $v;if ($x ==0) { $v = 1; } else { $v = $x; }
-#		print TEMPOUT "$a";
-#		print TEMPOUT "($REALGENOME{$a})";
-#		print TEMPOUT "\t$v";
-#		foreach my $files (@variantfile){
-#			$files =~ s/^\s+|\s$//g;
-#			if (exists $CHR{$a}{$v}{$files}){ print TEMPOUT "\t",$CHR{$a}{$v}{$files}; } else { print TEMPOUT "\t0"; }
-#		}
-#		print TEMPOUT "\n";
-#	}
-#}
-#close (TEMPOUT);
-#$pictures= $index."-".$count.".png";
-#Rscript($tempout,$pictures);
-#`rm -rf $tempout`;
-
-
+print "... finished\n";
 ##SUBROUTINES
 sub GENOME{
 	$/ = ">";
