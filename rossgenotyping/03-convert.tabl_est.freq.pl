@@ -78,7 +78,8 @@ while (<COMMON>){
 						} else {
 							$verdict = "no";
 							#print "$commonline[$colloc]\t$ADalt\t$ADref\n";
-							$newAC += (sprintf ("%.3f", ($ADalt/($ADref+$ADalt))));
+							if ($ADalt == 0 && $ADref == 0){ $newAC += 0 ; }
+							else { $newAC += (sprintf ("%.3f", ($ADalt/($ADref+$ADalt)))); }
 						}
 					#} else {
 					#	if($commonline[$header{"ALT"}] =~ /,/) {
