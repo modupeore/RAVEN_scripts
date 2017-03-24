@@ -115,10 +115,11 @@ print OUT "CHROM\tPOS\tREF\t";
 	
 foreach my $prefix (sort {$a cmp $b} @prefix){
 	print OUT "ALT\tFILTER\t";
-	if (exists $header{'GENE.REFGENE'}) { print OUT "GENE\tFUNC\t"; }
 	print OUT "AF\tNEW-AF\t";
 }
-print OUT "mergeALT\tavgAF\tmedAF\tavgnew-AF\tmednew-AF\n";
+print OUT "mergeALT\t";
+if (exists $header{'GENE.REFGENE'}) { print OUT "GENE\tFUNC\t"; }
+print OUT "avgAF\tmedAF\tavgnew-AF\tmednew-AF\n";
 print OUT2 "CHROM\tPOS\tREF\tmergeALT\t";
 if (exists $header{'GENE.REFGENE'}) { print OUT2 "GENE\tFUNC\t"; }
 print OUT2 "avgnew-AF\tmednew-AF\n";
@@ -145,10 +146,6 @@ foreach my $chrom (natsort keys %COMPARE) {
 		if (exists $ALTCOMPARE{$chrom}{$position}) { #if filter(s) has at least PASS
 			print OUT "$chrom\t$position\t$REFCOMPARE{$chrom}{$position}\t";
 			print OUT2 "$chrom\t$position\t$REFCOMPARE{$chrom}{$position}\t";
-			if (exists $header{'GENE.REFGENE'}){
-				print OUT "$ANN{$chrom}{$position}\t$FUNC{$chrom}{$position}\t";
-				print OUT2 "$ANN{$chrom}{$position}\t$FUNC{$chrom}{$position}\t";
-			}
 			foreach my $prefix (sort {$a cmp $b} @prefix ){
 				if (exists $COMPARE{$chrom}{$position}{$prefix}){
 					print OUT "$COMPARE{$chrom}{$position}{$prefix}\t";
@@ -158,6 +155,12 @@ foreach my $chrom (natsort keys %COMPARE) {
 			}
 			print OUT "$ALTCOMPARE{$chrom}{$position}\t";
 			print OUT2 "$ALTCOMPARE{$chrom}{$position}\t";
+			
+			if (exists $header{'GENE.REFGENE'}){
+				print OUT "$ANN{$chrom}{$position}\t$FUNC{$chrom}{$position}\t";
+				print OUT2 "$ANN{$chrom}{$position}\t$FUNC{$chrom}{$position}\t";
+			}
+
 			my @total = split(",",$AFCOMPARE{$chrom}{$position}); #print "$AFCOMPARE{$chrom}{$position} , this is total@total\n";
 			my $average = sprintf("%.3f", &average(\@total));
 			my $median = sprintf("%.3f", &median(\@total)); #print "here $median\n";

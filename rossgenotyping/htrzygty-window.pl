@@ -6,6 +6,7 @@ use Getopt::Long;
 use POSIX qw(ceil);
 use Sort::Key::Natural qw(natsort);
 use Statistics::R;
+use Data::Dumper;
 
 ##### Usage Documentation
 my $usage="
@@ -46,19 +47,24 @@ die "Specify one type of input$usage" if ($variantfile && $tablefile);
 
 ####Logs
 my $date = `date +%m-%d-%y_%T`; chomp $date;
-my $std_out = "htrzy-$date.log";
-my $std_err = "htrzy-$date.err";
+
+my $std_out = "htrzy-$date.log"; $std_out = @{ open_unique($std_out) }[1];
+my $std_err = "htrzy-$date.err"; $std_err = @{ open_unique($std_err) }[1];
 open(STDOUT, '>', "$std_out") or die "Log file doesn't exist";
 open(STDERR, '>', "$std_err") or die "Error file doesn't exist";
 
-##### Global options
+##### Global variables
 my ( %chrom, @variantfile, @heterozygosity, @regions);
 my (%CHR, %GENOME, %REALGENOME, %header, %info, %GENENAME);
 my (%AFmax, %AFmin, %SNPcount, %RUNTHRU, %NEWSTEP);
+my @chrstoremove = qw|W LGE64 16|;
 
-my %removehash  = map {$_ => 1} qw|W LGE64 16|; #chromosomes to remove
+##### User variables
+my %removehash  = map {$_ => 1} @chrstoremove; #chromosomes to remove
+my %otherremovehash = map {"chr".$_ => 1 } @chrstoremove;
 
 ##### Code
+#print Data::Dumper->Dump( [ \%otherremovehash ], [ qw(*thehash) ] );
 print "... Processing genome ";
 GENOME(); #read genome file
 print "... Done ",`date`;
@@ -130,6 +136,7 @@ foreach my $gchr (natsort keys %REALGENOME){
 	}
 } #end foreach real genome
 print "... Done ",`date`,"\n";
+
 #processing each variant file
 foreach my $files (@variantfile) {
 	$files =~ s/^\s+|\s+$//g;
@@ -138,43 +145,45 @@ foreach my $files (@variantfile) {
 	#die "main";
 	if ($tablefile) {
 		print "... Processing table file => $files";
-		print "\n... Processing table file => $files";
 		MAIN: while (<IN>){ chomp; 
 			my $line = $_; 
-			my @all = split (/\t/, $line); 
-			if (exists $RUNTHRU{$all[0]}) { #checking the chromosome exists in the reference genome file
-				my $ident = (int($all[1]/$step) * $step);
-				my $newident = $ident - $window;
-				my @array = map {$_; } sort {$a <=> $b} keys %{ $RUNTHRU{$all[0]} };
-				if ($newident < 0){$newident = 0};
-				foreach my $stepz ($NEWSTEP{$all[0]}{$newident}..@array){ #getting the index to search through
-					my ($first, $last) = split(/\-/,$RUNTHRU{$all[0]}{$stepz},2);
-					if ($all[1] >= $first && $all[1] <= $last) {
-						my $AF = $all[$#all]; #computing AFs the last column
-						unless ($AF =~ /,/){ #removing multiple AF for 1 position.
-							if ($AF < 0.01 || $AF > 0.99) {print "homozygous allele @ $all[0]:$all[1] won't be computed\n";}
-							else {
-								#getting the gene information
-								$all[4] =~ s/^\s+|\s+$//g;
-								if (exists $GENENAME{$all[0]}{$stepz}){ 
-									$GENENAME{$all[0]}{$stepz} = "$GENENAME{$all[0]}{$stepz},$all[4]";
-								} else {
-									$GENENAME{$all[0]}{$stepz} = $all[4];
-								} # end else getting the genename
-								#end of getting the gene information
-								
-								push my @newAF, $AF, 1-$AF;
-								my ($maxAF, $minAF)= &range(\@newAF); #getting the maximum and minimum AF
-								$AFmin{$all[0]}{$stepz}= $AFmin{$all[0]}{$stepz} + $minAF;
-								$AFmax{$all[0]}{$stepz}= $AFmax{$all[0]}{$stepz} + $maxAF;
-								$SNPcount{$all[0]}{$stepz}++;
-							} #end if AF
-						} #end unless multiple AF
-					} #end if window region
-					#next MAIN if $first > $all[1];
-					#elsif ($first > $all[1]){next MAIN;}
-				} #end foreach step
-			} #print $line,"\n";
+			my @all = split (/\t/, $line);
+			unless (exists $otherremovehash{$all[0]}){
+				if (exists $RUNTHRU{$all[0]}) { #checking the chromosome exists in the reference genome file
+					my $ident = (int($all[1]/$step) * $step);
+					my $newident = $ident - $window;
+					my @array = map {$_; } sort {$a <=> $b} keys %{ $RUNTHRU{$all[0]} };
+					if ($newident < 0){$newident = 0};
+					foreach my $stepz ($NEWSTEP{$all[0]}{$newident}..@array){ #getting the index to search through
+						my ($first, $last) = split(/\-/,$RUNTHRU{$all[0]}{$stepz},2);
+						if ($all[1] >= $first && $all[1] <= $last) {
+							my $AF = $all[$#all]; #computing AFs the last column
+							unless ($AF =~ /,/){ #removing multiple AF for 1 position.
+								if ($AF < 0.01 || $AF > 0.99) {print "homozygous allele @ $all[0]:$all[1] won't be computed\n";}
+								else {
+									#getting the gene information
+									$all[4] =~ s/^\s+|\s+$//g;
+									if (exists $GENENAME{$all[0]}{$stepz}){ 
+										$GENENAME{$all[0]}{$stepz} = "$GENENAME{$all[0]}{$stepz},$all[4]";
+									} else {
+										$GENENAME{$all[0]}{$stepz} = $all[4];
+									} # end else getting the genename
+									#end of getting the gene information
+									
+									push my @newAF, $AF, 1-$AF;
+									my ($maxAF, $minAF)= &range(\@newAF); #getting the maximum and minimum AF
+									$AFmin{$all[0]}{$stepz}= $AFmin{$all[0]}{$stepz} + $minAF;
+									$AFmax{$all[0]}{$stepz}= $AFmax{$all[0]}{$stepz} + $maxAF;
+									$SNPcount{$all[0]}{$stepz}++;
+								} #end if AF
+							} #end unless multiple AF
+						} #end if window region
+						next MAIN if $first > $all[1];
+						#elsif ($first > $all[1]){next MAIN;}
+					} #end foreach step
+				} #print $line,"\n";
+			} #end unless otherremove hash
+#			else {print "$all[0] eliminated\n";}
 		} #end while
 		print "... Done ",`date`;
 	} #end if table file
@@ -261,33 +270,38 @@ foreach my $files (@variantfile) {
 	my $mean = &average(\@heterozygosity);
 	my $stddev = &stdev(\@heterozygosity);
 	my $fileout2 = "ZHresult-".$fileout; #outputfile name
+	
 	open (OUT2, ">", $fileout2) or die;
+	$fileout2 = "all_ZHresult-".$fileout; #outputfile name
+	open (OUT3, ">", $fileout2) or die;
 	print OUT2 "CHROM\tSTART\tEND\tGENE\tnumber\tSNPcount\tHeterozygosity\tZHeterozygosity\n";
+	print OUT3 "CHROM\tSTART\tEND\tGENE\tnumber\tSNPcount\tHeterozygosity\tZHeterozygosity\n";
 	
 	foreach my $schr (natsort %SNPcount){
 		foreach my $stepy (sort {$a <=> $b} keys %{$SNPcount{$schr}}){
 			my $finalAF = $AFmin{$schr}{$stepy} + $AFmax{$schr}{$stepy};
+			my $heterozygosity = sprintf("%.3f",((2*$AFmin{$schr}{$stepy}*$AFmax{$schr}{$stepy})/($finalAF*$finalAF)));
+			my $zh = sprintf("%.3f",(($heterozygosity - $mean)/$stddev));
+			my ($start, $end) = split(/\-/,$RUNTHRU{$schr}{$stepy});
+			my %alls = map {$_ => 1} split(",", $GENENAME{$schr}{$stepy});
+			my @array = map {$_; } sort {$a <=> $b || $a cmp $b} keys %alls ;
+			my $genes = join (",", @array);
 			unless ($SNPcount{$schr}{$stepy} < 10 ){
-				my $heterozygosity = sprintf("%.3f",((2*$AFmin{$schr}{$stepy}*$AFmax{$schr}{$stepy})/($finalAF*$finalAF)));
-				my $zh = sprintf("%.3f",(($heterozygosity - $mean)/$stddev));
-				my ($start, $end) = split(/\-/,$RUNTHRU{$schr}{$stepy});
-				my %alls = map {$_ => 1} split(",", $GENENAME{$schr}{$stepy});
-				my @array = map {$_; } sort {$a <=> $b} keys %alls ;
-				my $genes = join (",", @array);
 				print OUT2 "$schr\t$start\t$end\t$genes\t$finalAF\t$SNPcount{$schr}{$stepy}\t$heterozygosity\t$zh\n";
+				print OUT3 "$schr\t$start\t$end\t$genes\t$finalAF\t$SNPcount{$schr}{$stepy}\t$heterozygosity\t$zh\n";
 			} else {
-				#print OUT2 "$schr\t$RUNTHRU{$schr}{$stepy}\t$finalAF\t$SNPcount{$schr}{$stepy}\n";
+				print OUT3 "$schr\t$start\t$end\t$genes\t$finalAF\t$SNPcount{$schr}{$stepy}\t$heterozygosity\t$zh\n";
 			}
 		}
 	} #end foreach compute window
-	close OUT2;
+	close OUT2; close OUT3;
 	print "... Done ",`date`;
 	
 	#R scripts
 	open(IN, $fileout2) or die "Can't open $fileout2\n"; my @inputall = <IN>; close(IN);
 	$fileout2 = "forR-".$fileout; #outputfile name
 	open (OUT, ">", $fileout2) or die;
-	my $originalfileout = "original-$fileout"; open (OUT3, ">", $originalfileout) or die;
+	my $originalfileout = "original_forR-$fileout"; open (OUT3, ">", $originalfileout) or die;
 	my $imptfileout = "impt-$fileout"; open (OUT2, ">", $imptfileout) or die;
 	my $header = shift @inputall;
 	$i = 0;
