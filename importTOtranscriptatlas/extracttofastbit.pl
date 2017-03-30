@@ -3,8 +3,6 @@
 # - - - - - - - - - - - - - - - - - H E A D E R - - - - - - - - - - - - - - - - - - -
 # - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 
-# MANUAL for extracting stuff from the database
-#10/26/2015
 
 # - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 # - - - - - - - - - - - - - - U S E R  V A R I A B L E S- - - - - - - - - - - - - - -
@@ -14,19 +12,17 @@ use DBI;
 use lib '/home/modupe/SCRIPTS/SUB';
 use routine;
 use passw;
-my ($dbh, $sth);
 
 # DATABASE ATTRIBUTES
-my $basepath = "/home/modupe/TranscriptAtlas";
-my $finalpath = "/home/modupe/public_html/FBTranscriptAtlas";
+my $basepath = "/home/modupe/public_html/TranscriptAtlas";
 `mkdir -p $basepath`;
 my $statusfile = "$basepath/mystatus.txt";
 # - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 # - - - - - - - - - - - - G L O B A L  V A R I A B L E S- - - - - - - - - - - - - -
 # - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-my %HashDirectory;
+my ($dbh, $sth); my %HashDirectory;
 # CONNECT TO THE DATABASE
-print "\n\n\tCONNECTING TO THE DATABASE \n\n";
+print "\n\n\tCONNECTING TO THE DATABASE : $dsn\n\n";
 $dbh = mysql();
 # - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 # - - - - - - - - - - - - - - - - M A I N - - - - - - - - - - - - - - - - - - - - - -
@@ -34,8 +30,7 @@ $dbh = mysql();
 # CONNECT
 #GETTING ALL THE LIBRARIES FROM THE DATABASE.
 my $libraries;
-print "Extracting library ids that don't have nosql\n";
-my $libras = "select a.library_id from vw_libraryinfo a join transcripts_summary b on ((a.library_id = b.library_id)) join variants_summary c on ((a.library_id = c.library_id)) where c.nosql is null and b.status = 'done' and a.species = \"gallus\"";
+my $libras = "select a.library_id from vw_libraryinfo a join variants_summary b on a.library_id = b.library_id where a.species = \"gallus\" and b.status = 'done' and b.nosql is null";
 $sth = $dbh->prepare($libras); $sth->execute or die "SQL Error: $DBI::errstr\n";
 
 while ( my $row = $sth->fetchrow_array() ) {
@@ -43,7 +38,7 @@ while ( my $row = $sth->fetchrow_array() ) {
 }
 $libraries = substr($libraries,0,-1);
 my @libraries = split (",", $libraries);
-print "\nExtracting comtent for library\n";
+#print @libraries; die;
 #PARSING EACH FILE OUT OF THE DATABASE. 
 foreach my $file (@libraries){
 	opendir (DIR, $basepath) or die "Folder \"$basepath\" doesn't exist\n"; 
@@ -51,11 +46,11 @@ foreach my $file (@libraries){
 	#pushing each subfolder
 	foreach (@Directory){
 		if ($_ =~ /^\d*$/){
-			$HashDirectory{$_}= $_;}
+		$HashDirectory{$_}= $_;}
 	}
 	unless (exists $HashDirectory{$file}){
-		mkdir "$basepath/$file"; print "Working on $file\n";
-		$dbh = mysql();
+		print "Working on $file...\n";
+		system("mkdir -p $basepath/$file");
 		my $syntax= "select
 			b.variant_class,b.zygosity,b.existing_variant,c.consequence,c.gene_id,
 			c.gene_name,c.transcript,c.feature,c.gene_type,b.ref_allele,b.alt_allele,a.line,
@@ -69,9 +64,11 @@ foreach my $file (@libraries){
 			where a.species = \"gallus\" and a.library_id = $file";
 	 
 		$sth = $dbh->prepare($syntax);
-		$sth->execute or die "SQL Error: $DBI::errstr\n";
-		open(OUT,">$basepath/$file/$file\.txt");
-			
+		
+		$sth->execute() or die "SQL Error: $DBI::errstr\n";
+
+		open(OUT,">$basepath/$file/$file\.txt") or die "wtf";
+		
 		#TABLE FORMAT
 		my $i = 0;
 		while ( my @row2 = $sth->fetchrow_array() ) {
@@ -80,6 +77,7 @@ foreach my $file (@libraries){
 				if ((length($row2[$list]) < 1) || ($row2[$list] =~ /^\-$/) ){
 					$row2[$list] = "NULL";
 				}
+				$row2[$list] =~ s/^'|'$//g;
 				if ($list < 18) {
 					print OUT "\'$row2[$list]\',";
 				}
@@ -95,44 +93,16 @@ foreach my $file (@libraries){
 		open(STATUS, ">>$statusfile");
 		print STATUS "$file\t$i\n";
 		close (OUT);
-
-		print "Importing to FastBit\n";
-		my $execute = "ardea -d $finalpath/chickenvariants -m \"
-						class:char,
-						zygosity:char,
-						dbsnp:char,
-						consequence:char,
-						geneid:char,
-						genename:char,
-						transcript:char,
-						feature:char,
-						genetype:char,
-						ref:char,
-						alt:char,
-						line:char,
-						tissue:char,
-						chrom:char,
-						aachange:char,
-						codon:char,
-						species:key,
-						notes:text, 
-						quality:double,
-						library:int,
-						variant:int,
-						snp:int,
-						indel:int,
-						position:int,
-						proteinposition:int\" -t $basepath/$file/$file\.txt";
-		print $execute,"\n"; system($execute);
-		
-		#update nosql
-		$dbh = mysql();
-		$syntax = "update variants_summary set nosql = 'done' where library_id = $file";
-		$sth->prepare($syntax); $sth->execute or die "$DBI::Errstr Failed to update variant summary\n";
-		print "Done with $file\n";
-
-
+	} # end unless
+	else {
+		print "Already processed library $file\n";
 	}
+} # end foreach
+#changing status to done
+if ($#libraries >= 1) {
+	my $syntax = "update variants_summary set nosql = 'done' where library_id in \($libraries\)";
+	$sth = $dbh->prepare($syntax); $sth->execute() or die "$DBI::errstr Failed to update variant summary\n";
+	print "\n\tFinished with nosql output \n";
 }
 # - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 print "\n\n*********DONE*********\n\n";

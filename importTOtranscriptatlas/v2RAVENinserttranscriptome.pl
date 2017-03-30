@@ -11,6 +11,8 @@ use Time::localtime;
 use Pod::Usage;
 use Time::Piece;
 use File::stat;
+use threads;
+use Thread::Queue;
 use DateTime;
 use POSIX qw( ceil );
 use lib '/home/modupe/SCRIPTS/SUB';
@@ -57,7 +59,7 @@ my (@parse, @NewDirectory);
 
 # TABLE VARIABLES
 my ($accepted, $samfile, $alignfile, $isoformsfile, $genesfile, $deletionsfile, $insertionsfile, $transcriptsgtf, $junctionsfile, $run_log, $htseqcount,$variantfile, $vepfile, $annovarfile);
-my ($parsedinput, $len, $alignrate, $varianttool);
+my ($parsedinput, $len, $alignrate, $varianttool, $fblocation);
 my ($lib_id, $total, $mapped, $unmapped, $deletions, $insertions, $junctions, $genes, $isoforms, $prep, $date); #transcripts_summary TABLE
 my ($track, $class, $ref_id, $gene, $gene_name, $tss, $locus, $chrom_no, $chrom_start, $chrom_stop, $length, $coverage, $fpkm, $fpkm_low, $fpkm_high, $fpkm_stat); # GENES_FPKM &
 
@@ -69,7 +71,8 @@ my $Mfolder;
 my (%VCFhash, %extra, %DBSNP, %VEPhash, %ExtraWork, %AMISG, %AMIST);
 my (@allgeninfo, $mappingtool, $refgenome, $refgenomename, %ALL);
 my ($stranded, $sequences, $annotation, $annotationfile, $annfileversion);
-my @foldercontent;
+my (@foldercontent, @VAR, @threads, $queue);
+my (%ARFPKM,%CHFPKM, %BEFPKM, %CFPKM, %DFPKM, %DHFPKM, %DLFPKM, %cfpkm, %dfpkm, %dhfpkm, %dlfpkm, %TPM,%tpm)= ();
 
 #PARSABLE GENOMES FOR ANALYSIS
 my $GENOMES="/home/modupe/.GENOMES/";
@@ -79,7 +82,7 @@ my %VEPparse = ("chicken" => 1,"mouse" => 2, ); #for VEP
 
 #INDEPENDENT PROGRAMS TO RUN
 my $PICARDDIR="/home/modupe/.software/picard-tools-1.136/picard.jar";
-my $GATKDIR="/home/modupe/.software/GenomeAnalysisTK-3.3-0/GenomeAnalysisTK.jar";
+my $GATKDIR="/home/modupe/.software/GenomeAnalysisTK-3.5/GenomeAnalysisTK.jar";
 my $VEP="/home/modupe/.software/ensembl-tools-release-81/scripts/variant_effect_predictor/variant_effect_predictor.pl";
 my $SNPdat="/home/modupe/.software/SNPdat_package_v1.0.5/SNPdat_v1.0.5.pl";
 my $email = 'amodupe@udel.edu';
@@ -126,7 +129,7 @@ if ($in1 =~ /\w.*_(\d+)/){
 			$run_log = (grep /logs\/run.log/, @foldercontent)[0];
 			$samfile = (grep /.sam$/, @foldercontent)[0];
 			$variantfile = (grep /.vcf$/, @foldercontent)[0]; 
-			$vepfile = (grep /.vep.txt$/, @foldercontent)[0];
+			$vepfile = (grep /vep.txt$/i, @foldercontent)[0];
 			$annovarfile = (grep /anno.txt$/, @foldercontent)[0];
 			$htseqcount = (grep /.counts$/, @foldercontent)[0];
 			LOGFILE();
@@ -143,7 +146,6 @@ if ($in1 =~ /\w.*_(\d+)/){
 		} #end if
 	}else {print "\nLibrary => $1 exists in the database\n";} #end unless
 } #end if	 
-#} #end foreach
 #SUMMARYstmts(); 
 system "rm -rf $progressnote";
 # DISCONNECT FROM THE DATABASE
@@ -219,6 +221,7 @@ sub CHECKING { #subroutine for checking the libraries in the database and those 
   }
 }
 sub LOGFILE { #subroutine for getting metadata
+	#print "working on abc\tcc$samfile\tdd$run_log\n"; die;
 	if ($samfile) {
 		@allgeninfo = split('\s',`grep -m 1 "\@PG" $samfile | head -1`);
 		foreach my $no (0..$#allgeninfo){ if ($allgeninfo[$no] =~ /^CL/) { ++$no; @allgeninfo = split('\s',`grep -m 1 "\@PG" $samfile | head -1`,$no);} }
@@ -229,7 +232,7 @@ sub LOGFILE { #subroutine for getting metadata
 			my $command = (grep /^CL\:/, @allgeninfo)[0];
 			$mappingtool = ((split(':',((grep /^ID\:/, @allgeninfo)[0])))[-1])." v".((split(':',((grep /^VN\:/, @allgeninfo)[0])))[-1]);
 			if ($allgeninfo[1] =~ /ID\:(\S*)$/){ $mappingtool = $1." v".(split(':',$allgeninfo[3]))[-1]; } #mapping tool name and version
-			if ($mappingtool =~ /hisat/i) {
+			if ($mappingtool =~ /hisat/i) { 
 				$command =~ /\-x\s(\w+)\s/;
 				$refgenome = $1;
 				$refgenomename = (split('\/', $refgenome))[-1]; #reference genome name
@@ -248,7 +251,7 @@ sub LOGFILE { #subroutine for getting metadata
 				} #end if toggle for sequences
 				$stranded = undef;
 				$annotation = undef;
-			} elsif ($mappingtool =~ /tophat/i) {
+			} elsif ($mappingtool =~ /tophat/i) { 
 				undef %ALL;
 				my ($no, $number) = (0,1);
 				@allgeninfo = split('\s',$command);
@@ -275,7 +278,7 @@ sub LOGFILE { #subroutine for getting metadata
 				unless (exists $ALL{"--library-type"}) { $stranded = undef; } else { $stranded = $ALL{"--library-type"}; }
 			
 				$refgenome = $ALL{0}; my $seq = $ALL{1}; my $otherseq = $ALL{2};
-				$refgenomename = (split('\/', $ALL{0}))[-1]; 
+				$refgenomename = (split('\/', $ALL{0}))[-1];
 				unless(length($otherseq)<1){ #sequences
 				  $sequences = ( ( split('\/', $seq) ) [-1]).",". ( ( split('\/', $otherseq) ) [-1]);
 				} else {
@@ -317,7 +320,7 @@ sub LOGFILE { #subroutine for getting metadata
       unless (exists $ALL{"--library-type"}) { $stranded = undef; } else { $stranded = $ALL{"--library-type"}; }
 			
       $refgenome = $ALL{0}; my $seq = $ALL{1}; my $otherseq = $ALL{2};
-			$refgenomename = (split('\/', $ALL{0}))[-1]; 
+			$refgenomename = (split('\/', $ALL{0}))[-1];
       unless(length($otherseq)<1){ #sequences
         $sequences = ( ( split('\/', $seq) ) [-1]).",". ( ( split('\/', $otherseq) ) [-1]);
       } else {
@@ -332,11 +335,13 @@ sub LOGFILE { #subroutine for getting metadata
 sub GENES_FPKM { #subroutine for getting gene information
 	#INSERT INTO DATABASE: #genes_summary table
 	$sth = $dbh->prepare("select library_id from genes_summary where library_id = '$_[0]'"); $sth->execute(); $found = $sth->fetch();
-	unless ($found) { 
+	unless ($found) {
+		print "NOTICE:\t $_[0] inserting $_[0] genes summary details into the database ...";
 		$sth = $dbh->prepare("insert into genes_summary (library_id,date) values (?,?)");
 		$sth ->execute($_[0], $date) or die "\nERROR:\t Complication in genes_summary table,\n";
+		print " Done\n";
 	} else {
-		print "NOTICE:\t $_[0] already in genes_summary table... Moving on \n";
+		print "NOTICE:\t $_[0] Metadata already in genes_summary table... Moving on \n";
 	}
 	my ($genecount, $isoformcount) = (0,0);
 	$sth = $dbh->prepare("select status from genes_summary where library_id = '$_[0]' and status ='done'"); $sth->execute(); $found = $sth->fetch();
@@ -355,17 +360,18 @@ sub GENES_FPKM { #subroutine for getting gene information
 				print "NOTICE:\t Importing $diffexpress expression information for $_[0] to genes_fpkm table ...";
 				#import into FPKM table;
 				open(FPKM, "<", $genesfile) or die "\nERROR:\t Can not open file $genesfile\n";
-				my $syntax = "insert into genes_fpkm (library_id, gene_id, gene_short_name, chrom_no, chrom_start, chrom_stop, coverage, fpkm, fpkm_conf_low, fpkm_conf_high, fpkm_status ) values (?,?,?,?,?,?,?,?,?,?,?)";
-				my $sth = $dbh->prepare($syntax);
-				while (<FPKM>){
-					chomp;
-					my ($track, $class, $ref_id, $gene, $gene_name, $tss, $locus, $length, $coverage, $fpkm, $fpkm_low, $fpkm_high, $fpkm_stat ) = split /\t/;
-					unless ($track eq "tracking_id"){ #check & specifying undefined variables to null
-						if($coverage =~ /-/){$coverage = undef;}
-						my ($chrom_no, $chrom_start, $chrom_stop) = $locus =~ /^(.+)\:(.+)\-(.+)$/; $chrom_start++;
-						$sth ->execute($_[0], $gene, $gene_name, $chrom_no, $chrom_start, $chrom_stop, $coverage, $fpkm, $fpkm_low, $fpkm_high, $fpkm_stat ) or die "\nERROR:\t Complication in genes_fpkm table, consult documentation\n";
-					}
-				} close FPKM;
+
+				##change to thread
+				my @fpkmdetails = <FPKM>; close(FPKM);
+				shift @fpkmdetails;
+				push @VAR, [ splice @fpkmdetails, 0, 200 ] while @fpkmdetails; #sub the files to multiple subs
+
+				$queue = new Thread::Queue();
+				my $builder=threads->create(\&main); #create thread for each subarray into a thread
+				push @threads, threads->create(\&cuffprocessor) for 1..5; #execute 10 threads
+				$builder->join; #join threads
+				foreach (@threads){$_->join;}
+
 				print " Done\n";
 			} else {
 				print "NOTICE:\t $_[0] already in genes_fpkm table... Moving on \n";
@@ -382,17 +388,19 @@ sub GENES_FPKM { #subroutine for getting gene information
 					print "NOTICE:\t Importing $diffexpress expression information for $_[0] to isoforms_fpkm table ...";
 					#import into ISOFORMSFPKM table;
 					open(FPKM, "<", $isoformsfile) or die "\nERROR:\t Can not open file $isoformsfile\n";
-					$syntax = "insert into isoforms_fpkm (library_id, tracking_id, gene_id, gene_short_name, chrom_no, chrom_start, chrom_stop, coverage, fpkm, fpkm_conf_low, fpkm_conf_high, fpkm_status ) values (?,?,?,?,?,?,?,?,?,?,?,?)";
-					$sth = $dbh->prepare($syntax);
-					while (<FPKM>){
-						chomp;
-						my ($track, $class, $ref_id, $gene, $gene_name, $tss, $locus, $length, $coverage, $fpkm, $fpkm_low, $fpkm_high, $fpkm_stat ) = split /\t/;
-						unless ($track eq "tracking_id"){ #check & specifying undefined variables to null
-							if($coverage =~ /-/){$coverage = undef;}
-							my ($chrom_no, $chrom_start, $chrom_stop) = $locus =~ /^(.+)\:(.+)\-(.+)$/; $chrom_start++;
-							$sth ->execute($_[0], $track, $gene, $gene_name, $chrom_no, $chrom_start, $chrom_stop, $coverage, $fpkm, $fpkm_low, $fpkm_high, $fpkm_stat ) or die "\nERROR:\t Complication in genes_fpkm table, consult documentation\n";
-						}
-					} close FPKM;
+					
+					##change to thread
+					my @fpkmdetails = <FPKM>; close(FPKM);
+					shift @fpkmdetails;
+					push @VAR, [ splice @fpkmdetails, 0, 200 ] while @fpkmdetails; #sub the files to multiple subs
+	
+					$queue = new Thread::Queue();
+					my $builder=threads->create(\&main); #create thread for each subarray into a thread
+					push @threads, threads->create(\&isoprocessor) for 1..5; #execute 10 threads
+					$builder->join; #join threads
+					foreach (@threads){$_->join;}
+					###
+				
 					print " Done\n";
 				} else {
 					print "NOTICE:\t $_[0] already in isoforms_fpkm table... Moving on \n";
@@ -407,7 +415,7 @@ sub GENES_FPKM { #subroutine for getting gene information
 			if (`head -n 1 $transcriptsgtf` =~ /cufflinks/i) { #working with cufflinks transcripts.gtf file
 				$diffexpress = "Cufflinks";
 				open(FPKM, "<", $transcriptsgtf) or die "\nERROR:\t Can not open file $transcriptsgtf\n";
-				my (%ARFPKM,%CHFPKM, %BEFPKM, %CFPKM, %DFPKM, %DHFPKM, %DLFPKM, %cfpkm, %dfpkm, %dhfpkm, %dlfpkm)= ();
+				(%ARFPKM,%CHFPKM, %BEFPKM, %CFPKM, %DFPKM, %DHFPKM, %DLFPKM, %cfpkm, %dfpkm, %dhfpkm, %dlfpkm)= ();
 				my $i=1;
 				while (<FPKM>){
 					chomp;
@@ -473,17 +481,20 @@ sub GENES_FPKM { #subroutine for getting gene information
 				$sth = $dbh->prepare("update genes_summary set genes = $genes, diffexpresstool = '$diffexpress' where library_id= '$_[0]'"); $sth ->execute(); #updating genes_summary table.
 				unless ($genes == $genecount) {
 					unless ($genecount == 0 ) {
-						print "NOTICE:\t Removed incomplete records for $_[0] in genes_fokm table\n";
+						print "NOTICE:\t Removed incomplete records for $_[0] in genes_fpkm table\n";
 						$sth = $dbh->prepare("delete from genes_fpkm where library_id = '$_[0]'"); $sth->execute();
 					}
 					print "NOTICE:\t Importing $diffexpress expression information for $_[0] to genes_fpkm table ...";
-					#import into FPKM table;
-					my $syntax = "insert into genes_fpkm (library_id, gene_id, chrom_no, chrom_start, chrom_stop, coverage, fpkm, fpkm_conf_low, fpkm_conf_high ) values (?,?,?,?,?,?,?,?,?)";
-					my $sth = $dbh->prepare($syntax);
-					foreach my $a (keys %ARFPKM){
-						my @array = split(",",$ARFPKM{$a});
-						$sth -> execute(@array, $BEFPKM{$a}, $CHFPKM{$a}, $cfpkm{$a}, $dfpkm{$a}, $dlfpkm{$a}, $dhfpkm{$a}) or die "\nERROR:\t Complication in $_[0] table, consult documentation\n";
-					}
+					
+					##change to thread
+					my @fpkmdetails = scalar keys %ARFPKM;
+					push @VAR, [ splice @fpkmdetails, 0, 200 ] while @fpkmdetails; #sub the files to multiple subs
+					$queue = new Thread::Queue();
+					my $builder=threads->create(\&main); #create thread for each subarray into a thread
+					push @threads, threads->create(\&gtfcuffprocessor) for 1..5; #execute 10 threads
+					$builder->join; #join threads
+					foreach (@threads){$_->join;}
+					
 					print " Done\n";
 					#set genes_summary to Done
 					$sth = $dbh->prepare("update genes_summary set status = 'done' where library_id = '$_[0]'");
@@ -491,11 +502,11 @@ sub GENES_FPKM { #subroutine for getting gene information
 				}	else {
 						print "NOTICE:\t $_[0] already in genes_fpkm table... Moving on \n";	
 				}	
-			}
+			} # end if cufflinks
 			elsif (`head -n 1 $transcriptsgtf` =~ /stringtie/i) { #working with stringtie output
 				$diffexpress = substr( `head -n 2 $transcriptsgtf | tail -1`,2,-1);
 				open(FPKM, "<", $transcriptsgtf) or die "\nERROR:\t Can not open file $transcriptsgtf\n";
-				my (%ARFPKM,%CHFPKM, %BEFPKM, %CFPKM, %DFPKM, %TPM, %cfpkm, %dfpkm, %tpm)= ();
+				(%ARFPKM,%CHFPKM, %BEFPKM, %CFPKM, %DFPKM, %TPM, %cfpkm, %dfpkm, %tpm)= ();
 				my $i=1;
 				while (<FPKM>){
 					chomp;
@@ -562,13 +573,16 @@ sub GENES_FPKM { #subroutine for getting gene information
 						$sth = $dbh->prepare("delete from genes_fpkm where library_id = '$_[0]'"); $sth->execute();
 					}
 					print "NOTICE:\t Importing StringTie expression information for $_[0] to genes_fpkm table ...";
-					#import into FPKM table;
-					my $syntax = "insert into genes_fpkm (library_id, gene_id, gene_short_name, chromnumber, chromstart, chromstop, coverage, fpkm, tpm ) values (?,?,?,?,?,?,?,?,?)";
-					my $sth = $dbh->prepare($syntax);
-					foreach my $a (keys %ARFPKM){
-						my @array = split(",",$ARFPKM{$a});
-						$sth -> execute(@array, $BEFPKM{$a}, $CHFPKM{$a}, $cfpkm{$a}, $dfpkm{$a}, $tpm{$a}) or die "\nERROR:\t Complication in $_[0] table, consult documentation\n";
-					}
+					
+					##change to thread
+					my @fpkmdetails = scalar keys %ARFPKM;
+					push @VAR, [ splice @fpkmdetails, 0, 200 ] while @fpkmdetails; #sub the files to multiple subs
+					$queue = new Thread::Queue();
+					my $builder=threads->create(\&main); #create thread for each subarray into a thread
+					push @threads, threads->create(\&strprocessor) for 1..5; #execute 10 threads
+					$builder->join; #join threads
+					foreach (@threads){$_->join;}
+
 					print " Done\n";
 					#set genes_summary to Done
 					$sth = $dbh->prepare("update genes_summary set status = 'done' where library_id = '$_[0]'");
@@ -593,8 +607,8 @@ sub PARSING {
   print "\n\tINSERTING TRANSCRIPTS INTO THE DATABASE : \t library_$_[0]\n\n";
   $lib_id = $_[0]; my $librarydir = $_[1]; my $verdict = 0;
   #created a log file check because
-  #also getting metadata info
-	
+  #making sure the input genome is chicken or gallus
+	unless (($refgenomename =~ /chicken/i) || ($refgenomename =~ /galgal/i)){ die "$refgenomename is not chicken or gallus\n";} 
   #making sure I'm working on only the chicken files for now, need to find annotation of alligator
   my @checkerno = split('\/',$allgeninfo[$#allgeninfo]);
   my @numberz =split('_', $checkerno[$#checkerno]); 
@@ -610,7 +624,7 @@ sub PARSING {
         while (<ALIGN>){
           chomp;
           if (/Input/){my $line = $_; $line =~ /Input.*:\s+(\d+)$/;$total = $1;}
-					if (/overall/) { my $line = $_; $line =~ /^(\d+.\d+)%\s/; $alignrate = $1;}
+					if (/overall/) {  my $line = $_; $line =~ /(\d+.\d+)%\s/; $alignrate = $1;}
 					if (/overall read mapping rate/) {
 						if ($mappingtool){
 							unless ($mappingtool =~ /TopHat/i){
@@ -625,7 +639,7 @@ sub PARSING {
 							}
 						} else { $mappingtool = "HISAT";}
 					}
-				} close ALIGN;
+				} close ALIGN; 
 				$mapped = ceil($total * $alignrate/100);
       } else {die "\nFAILED:\t Can not find Alignment summary file as 'align_summary.txt'\n";}
      	$deletions = undef; $insertions = undef; $junctions = undef;
@@ -634,7 +648,6 @@ sub PARSING {
 			if ($junctionsfile){ $junctions = `cat $junctionsfile | wc -l`; $junctions--; }
       $unmapped = $total-$mapped;
       $date = `date +%Y-%m-%d`;
-
       #PARSING FOR SNPanalysis
       @parse = split('\/\/',$accepted); $accepted = undef; $len = $#parse+1; foreach(@parse){$accepted .= $_; if($len>1){$accepted .="\/"; $len--;}};
       @parse = split('\/\/',$run_log); $run_log = undef; $len = $#parse+1; foreach(@parse){$run_log .= $_; if($len>1){$run_log .="\/"; $len--;}};
@@ -642,10 +655,14 @@ sub PARSING {
       #INSERT INTO DATABASE : transcriptatlas
 			$sth = $dbh->prepare("select library_id from transcripts_summary where library_id = '$lib_id'"); $sth->execute(); $found = $sth->fetch();
 			unless ($found) {
-				print "NOTICE:\t $_[0] inserting $_[0] metadata details into the database ...";
+				print "NOTICE:\t $lib_id inserting $lib_id metadata details into the database ...";
 				#transcripts_summary table
-				$sth = $dbh->prepare("insert into transcripts_summary (library_id, total_reads, mapped_reads, unmapped_reads, deletions, insertions, junctions, date ) values (?,?,?,?,?,?,?,?)");
-				$sth ->execute($lib_id, $total, $mapped, $unmapped, $deletions, $insertions, $junctions, $date);
+				$sth = $dbh->prepare("insert into transcripts_summary (library_id, date ) values (?,?)");
+				$sth ->execute($lib_id, $date);
+				#update
+				$sth = $dbh->prepare("update transcripts_summary set total_reads = $total, mapped_reads = $mapped, unmapped_reads = $unmapped, deletions = $deletions, insertions = $insertions, junctions = $junctions");
+				$sth ->execute();
+				
 				#frnak_metadata table
 				$annfileversion = substr(`head -n 1 $annotationfile`,2,-1); #annotation file version
 				$sth = $dbh->prepare("insert into frnak_metadata (library_id,ref_genome, ann_file, ann_file_ver, stranded, sequences,user ) values (?,?,?,?,?,?,?)");
@@ -653,7 +670,7 @@ sub PARSING {
 				
 				print "Done \n";
 			}else {
-				print "NOTICE:\t $_[0] already in transcripts_summary tables... Moving on \n";
+				print "NOTICE:\t $lib_id already in transcripts_summary tables... Moving on \n";
 			}
 			GENES_FPKM($lib_id);
 
@@ -689,109 +706,120 @@ sub PARSING {
 }
 sub HTSEQ { #importing Htseqcount details to the database
   print "\n\tSTORING HTSEQ IN THE DATABASE\n\n";
-  open(HTSEQ, "<$_[0]") or die "Can't open file $_[0]\n";
-  $sth = $dbh->prepare("insert into htseq ( library_id, gene_name, count) values (?,?,?)");
-  while (<HTSEQ>){
-    chomp;
-    my ($NAME, $VALUE) = split /\t/;
-    if ($NAME =~ /^[a-z0-9A-Z]/i) {
-      $sth->execute($lib_id, $NAME, $VALUE);
-    }
-  } close HTSEQ;
-}
-sub VARIANTS{ #process variants
-  print "\n\tWORKING ON VARIANT ANALYSIS\n\n";
-	my $specie = $_[2];
-	my $REF= "$GENOMES/$_[2]/$_[2]".".fa";
-	my $ANN = $_[3];
-	my $libraryNO = "library_".$_[0]; 
-	unless ($variantfile){ #check if variantfile exists if not, it will be generated using VAP
-		print "NOTICE: Variant file isn't present, creating variantfile using VAP details & is stored in $STORAGEPATH\n";
-		my $bamfile = $_[1]; 
-		my $REF= "$GENOMES/$_[2]/$_[2]".".fa";
-		my $geneLIST = "$GENOMES/$_[2]/$_[2]".".txt";
-		my $DICT = "$GENOMES/$_[2]/$_[2]".".dict";
-		my $ANN = $_[3];
-  
-		$Mfolder = "$STORAGEPATH/$libraryNO"; `mkdir -p $Mfolder`; print "made $Mfolder\n"; #decided to keep all the variant folders.
-		$gatk_version = ( ( split('\/',$GATKDIR)) [-2] );
-		$picard_version = ( ( split('\/',$PICARDDIR)) [-2] );
-	
-		#VARIANT ANALYSIS
-		#PICARD
-		my $filename = "$Mfolder/$libraryNO.vcf";
-		unless (-e $filename) {
-			$filename = "$Mfolder/$libraryNO.bam";
-			unless (-e $filename){
-				`java -jar $PICARDDIR SortSam INPUT=$bamfile OUTPUT=$filename SO=coordinate`;
-			} else { print "NOTICE: $filename exists\n"; }
-  
-			#ADDREADGROUPS
-			$filename = "$Mfolder/$libraryNO"."_add.bam";
-			unless (-e "$filename"){
-			my $addreadgroup = "java -jar $PICARDDIR AddOrReplaceReadGroups INPUT=$Mfolder/$libraryNO".".bam OUTPUT=$filename SO=coordinate RGID=LAbel RGLB=Label RGPL=illumina RGPU=Label RGSM=Label";
-  		`$addreadgroup`;
-			print "NOTICE: Add read groups complete\n";
-			} else { print "$Mfolder/$libraryNO"."_add.bam already exists\n"; }
-			
-			#MARKDUPLICATES
-			unless (-e "$Mfolder/$libraryNO"."_mdup.bam" ) {
-			my $markduplicates = "java -jar $PICARDDIR MarkDuplicates INPUT=$Mfolder/".$libraryNO."_add.bam OUTPUT=$Mfolder/".$libraryNO."_mdup.bam M=$Mfolder/".$libraryNO."_mdup.metrics 	CREATE_INDEX=true";
-			`$markduplicates`;
-			print "NOTICE: Mark duplicates complete\n";
-			} else { print "$Mfolder/$libraryNO"."_mdup.bam already exists\n"; }
-  
-			#SPLIT&TRIM
-				unless (-e "$Mfolder/$libraryNO"."_split.bam" ) {  
-				my $splittrim = "java -jar $GATKDIR -T SplitNCigarReads -R $REF -I $Mfolder/".$libraryNO."_mdup.bam -o $Mfolder/".$libraryNO."_split.bam -rf ReassignOneMappingQuality -RMQF 255 -RMQT 60 --filter_reads_with_N_cigar";
-					`$splittrim`;
-				print "NOTICE: Split N Cigar reads complete\n";
-				} else { print "$Mfolder/$libraryNO"."_split.bam already exists \n"; }
-			
-			#GATK
-			unless (-e "$Mfolder/$libraryNO.vcf" ) { 
-				my $gatk = "java -jar $GATKDIR -T HaplotypeCaller -R $REF -I $Mfolder/".$libraryNO."_split.bam -o $Mfolder/$libraryNO.vcf";
-				`$gatk`;
-				print "NOTICE: Haplotype caller complete\n";
-			} else { print "$Mfolder/$libraryNO".".vcf already exists \n"; }		
-		} else {
-			print "NOTICE: Variants VCF in $STORAGEPATH is already created\n";
-			#perl to select DP > 5 & get header information
-			FILTERING($Mfolder, "$Mfolder/$libraryNO.vcf");
-			DBVARIANTS("$Mfolder/$libraryNO"."_DP5.vcf", $libraryNO);
-		}
-	} else {
-		print "NOTICE: Variants VCF already created\n";
-		#perl to select DP > 5 & get header information
-		FILTERING($Mfolder, $variantfile);
-		unless ($vepfile) { #filter if variant-annotation file doesn't already exists
-			@foldercontent = split("\n", `find $parsedinput`); #get details of the folder
-			my $DP5file = (grep /_DP5.vcf$/, @foldercontent)[0];
-			DBVARIANTS($DP5file, $libraryNO);
-		} else {
-			DBVARIANTS($variantfile, $libraryNO);
-		}
+	my $htseqnumber = $dbh->selectrow_array("select count(*) from htseq where library_id = '$lib_id'");
+	my $htseq = `cat $_[0] | wc -l`; if ($htseq >6){ $htseq -= 6;} else {$htseq = 0;} 
+  unless ($htseq == $htseqnumber) {
+	  open(HTSEQ, "<$_[0]") or die "Can't open file $_[0]\n";
+	  $sth = $dbh->prepare("insert into htseq ( library_id, gene_name, count) values (?,?,?)");
+	  while (<HTSEQ>){
+	    chomp;
+	    my ($NAME, $VALUE) = split /\t/;
+	    if ($NAME =~ /^[a-z0-9A-Z]/i) {
+	      $sth->execute($lib_id, $NAME, $VALUE);
+	    }
+	  } close HTSEQ;
 	}
-	#ANNOTATIONS : running VEP
-	unless ($vepfile){ #check if vepfile exists if not, it will be generated using VEP
-		unless ($variantfile){
-			$vep_version = ( ( split('\/',$VEP)) [-4] );
-			print "this is the species $specie\n"; #Remove this Modupe
-			if (exists $VEPparse{$specie}){
-				my $veptxt = "perl $VEP -i $Mfolder/".$libraryNO."_DP5.vcf --fork 24 --species $specie  --dir /home/modupe/.vep/ --cache --merged --everything on --terms ensembl --output_file 	$Mfolder/".$libraryNO."_VEP.txt"; `$veptxt`;
-				#my $vepvcf = "perl $VEP -i $Mfolder/".$libraryNO."_DP5.vcf --fork 24 --species $specie  --dir /home/modupe/.vep/ --cache --vcf --merged --everything on --terms ensembl 	--output_file $Mfolder/".$libraryNO."_VEP.vcf"; `$vepvcf`;
-				VEPVARIANT($Mfolder."/".$libraryNO."_VEP.txt", $libraryNO);  #import variants to database
+}
+
+sub VARIANTS{ #process variants
+  $sth = $dbh->prepare("select library_id from variants_summary where library_id = '$_[0]' and status = 'done'"); $sth->execute(); $found = $sth->fetch();	
+	unless ($found) {
+		print "\n\tWORKING ON VARIANT ANALYSIS\n\n";
+		my $specie = $_[2];
+		my $REF= "$GENOMES/$_[2]/$_[2]".".fa";
+		my $ANN = $_[3];
+		my $libraryNO = "library_".$_[0]; 
+		unless ($variantfile){ #check if variantfile exists if not, it will be generated using VAP
+			print "NOTICE: Variant file isn't present, creating variantfile using VAP details & is stored in $STORAGEPATH\n";
+			my $bamfile = $_[1]; 
+			my $REF= "$GENOMES/$_[2]/$_[2]".".fa";
+			my $geneLIST = "$GENOMES/$_[2]/$_[2]".".txt";
+			my $DICT = "$GENOMES/$_[2]/$_[2]".".dict";
+			my $ANN = $_[3];
+  
+			$Mfolder = "$STORAGEPATH/$libraryNO"; `mkdir -p $Mfolder`; print "\tmade $Mfolder\n"; #decided to keep all the variant folders.
+			$gatk_version = ( ( split('\/',$GATKDIR)) [-2] );
+			$picard_version = ( ( split('\/',$PICARDDIR)) [-2] );
+	
+			#VARIANT ANALYSIS
+			#PICARD
+			my $filename = "$Mfolder/$libraryNO.vcf";
+			unless (-e $filename) {
+				$filename = "$Mfolder/$libraryNO.bam";
+				#SORT BAM
+				unless (-e $filename){
+					`java -jar $PICARDDIR SortSam INPUT=$bamfile OUTPUT=$filename SO=coordinate`;
+				} else { print "NOTICE: $filename exists\n"; }
+		
+				#ADDREADGROUPS
+				$filename = "$Mfolder/$libraryNO"."_add.bam";
+				unless (-e "$filename"){
+					my $addreadgroup = "java -jar $PICARDDIR AddOrReplaceReadGroups INPUT=$Mfolder/$libraryNO".".bam OUTPUT=$filename SO=coordinate RGID=LAbel RGLB=Label RGPL=illumina RGPU=Label 	RGSM=Label";
+					`$addreadgroup`;
+					print "NOTICE: Add read groups complete\n";
+				} else { print "$Mfolder/$libraryNO"."_add.bam already exists\n"; }
+				
+				#MARKDUPLICATES
+				unless (-e "$Mfolder/$libraryNO"."_mdup.bam" ) {
+					my $markduplicates = "java -jar $PICARDDIR MarkDuplicates INPUT=$Mfolder/".$libraryNO."_add.bam OUTPUT=$Mfolder/".$libraryNO."_mdup.bam M=$Mfolder/".$libraryNO."_mdup.metrics 			CREATE_INDEX=true";
+					`$markduplicates`;
+					print "NOTICE: Mark duplicates complete\n";
+				} else { print "$Mfolder/$libraryNO"."_mdup.bam already exists\n"; }
+  
+				#SPLIT&TRIM
+				unless (-e "$Mfolder/$libraryNO"."_split.bam" ) {  
+					my $splittrim = "java -jar $GATKDIR -T SplitNCigarReads -R $REF -I $Mfolder/".$libraryNO."_mdup.bam -o $Mfolder/".$libraryNO."_split.bam -rf ReassignOneMappingQuality -RMQF 255 -RMQT 60 --filter_reads_with_N_cigar";
+					`$splittrim`;
+					print "NOTICE: Split N Cigar reads complete\n";
+					} else { print "$Mfolder/$libraryNO"."_split.bam already exists \n"; }
+			
+				#GATK
+				unless (-e "$Mfolder/$libraryNO.vcf" ) { 
+					my $gatk = "java -jar $GATKDIR -T HaplotypeCaller -R $REF -I $Mfolder/".$libraryNO."_split.bam -o $Mfolder/$libraryNO.vcf";
+					`$gatk`;
+					print "NOTICE: Haplotype caller complete\n";
+				} else { print "$Mfolder/$libraryNO".".vcf already exists \n"; }		
 			} else {
-			  next "Unidentified genome\t$mystderror\n";
+				print "NOTICE: Variants VCF in $STORAGEPATH is already created\n";
+				#perl to select DP > 5 & get header information
+				FILTERING($Mfolder, "$Mfolder/$libraryNO.vcf");
+				DBVARIANTS("$Mfolder/$libraryNO"."_DP5.vcf", $libraryNO);
 			}
 		} else {
-			my $DP5file = (grep /_DP5.vcf$/, @foldercontent)[0];
-			VEPVARIANT($DP5file, $libraryNO);
+			print "NOTICE:\t Variants VCF already created for $_[0]\n";
+			#perl to select DP > 5 & get header information
+			FILTERING($Mfolder, $variantfile);
+			unless ($vepfile) { #filter if variant-annotation file doesn't already exists
+				@foldercontent = split("\n", `find $parsedinput`); #get details of the main folder
+				my $DP5file = (grep /_DP5.vcf$/, @foldercontent)[0];
+				DBVARIANTS($DP5file, $libraryNO);
+			} else {
+				DBVARIANTS($variantfile, $libraryNO);
+			}
 		}
-	} else {
-		print "NOTICE: VEP file already exists\n";
-		VEPVARIANT($vepfile, $libraryNO);  #import variants to database
-		
+		#ANNOTATIONS : running VEP
+		unless ($vepfile){ #check if vepfile exists if not, it will be generated using VEP
+			unless ($variantfile){
+				$vep_version = ( ( split('\/',$VEP)) [-4] ); 
+				print "this is the species $specie\n"; #Remove this Modupe
+				if (exists $VEPparse{$specie}){
+					my $veptxt = "perl $VEP -i $Mfolder/".$libraryNO."_DP5.vcf --fork 24 --species $specie  --dir /home/modupe/.vep/ --cache --merged --everything on --terms ensembl --output_file 		$Mfolder/".$libraryNO."_VEP.txt"; `$veptxt`;
+					#my $vepvcf = "perl $VEP -i $Mfolder/".$libraryNO."_DP5.vcf --fork 24 --species $specie  --dir /home/modupe/.vep/ --cache --vcf --merged --everything on --terms ensembl 		--output_file $Mfolder/".$libraryNO."_VEP.vcf"; `$vepvcf`;
+					VEPVARIANT($Mfolder."/".$libraryNO."_VEP.txt", $libraryNO);  #import variants to database
+				} else {
+				  next "Unidentified genome\t$mystderror\n";
+				}
+			} else {
+				my $DP5file = (grep /_DP5.vcf$/, @foldercontent)[0];
+				VEPVARIANT($DP5file, $libraryNO);
+			}
+		} else {
+			print "NOTICE: VEP file already exists\n";
+			VEPVARIANT($vepfile, $libraryNO);  #import variants to database
+		}
+	} #end unless the variants are already in the database.
+	else {
+		print "NOTICE: $_[0] Already exists in variants summary table\n";
 	}
 } 
 sub FILTERING {
@@ -869,14 +897,16 @@ sub DBVARIANTS {
 	} close VARVCF;
 	$sth = $dbh->prepare("select library_id from variants_summary where library_id = '$libnumber' and status = 'done'"); $sth->execute(); $found = $sth->fetch();	
 	unless ($found) {
-		#deleting previous records if there are
-		$sth = $dbh->prepare("delete from variants_annotation where library_id = '$libnumber'"); $sth->execute();
-	  $sth = $dbh->prepare("delete from variants_result where library_id = '$libnumber'"); $sth->execute();
-    $sth = $dbh->prepare("delete from variants_summary where library_id = '$libnumber'"); $sth->execute();
-		
+		$sth = $dbh->prepare("select library_id from variants_summary where library_id = '$libnumber'"); $sth->execute(); $found = $sth->fetch();	
+		if ($found) { #deleting previous records if there are
+			$sth = $dbh->prepare("delete from variants_annotation where library_id = '$libnumber'"); $sth->execute();
+			$sth = $dbh->prepare("delete from variants_result where library_id = '$libnumber'"); $sth->execute();
+			$sth = $dbh->prepare("delete from variants_summary where library_id = '$libnumber'"); $sth->execute();
+		} # end unless
+		$vep_version = ( ( split('\/',$VEP)) [-4] ); 
 		$sth = $dbh->prepare("insert into variants_summary ( library_id, ANN_version, Picard_version, GATK_version, variant_tool, date ) values (?,?,?,?,?,?)");
 		$sth ->execute($libnumber, $vep_version, $picard_version, $gatk_version, $toolvariant, $date);
-
+    
 		#VARIANT_RESULTS
 		print "NOTICE:\t Importing $varianttool variant information for $libnumber to variants_result table ...";
 		foreach my $abc (sort keys %VCFhash) {
@@ -891,19 +921,18 @@ sub DBVARIANTS {
 				elsif (length $vcf[0] == length $vcf[1]){ $itvariants++; $itsnp++; $variantclass = "SNV"; }
 				elsif (length $vcf[0] < length $vcf[1]) { $itvariants++; $itindel++; $variantclass = "insertion"; }
 				else { $itvariants++; $itindel++; $variantclass = "deletion"; }
-	
+		
 				#to variant_result
 				$sth = $dbh->prepare("insert into variants_result ( library_id, chrom, position, ref_allele, alt_allele, quality, variant_class, zygosity ) values (?,?,?,?,?,?,?,?)");
 				$sth ->execute($libnumber, $abc, $def, $vcf[0], $vcf[1], $vcf[2], $variantclass, $vcf[3]) or die "\nERROR:\t Complication in variants_result table, consult documentation\n";
 			}
 		}
 		#update variantsummary with counts
-		$sth = $dbh->prepare("update variants_summary set totalvariants = $itvariants, totalsnps = $itsnp, totalindels = $itindel where library_id= '$_[1]'");
-		$sth ->execute();
+		$sth = $dbh->prepare("update variants_summary set total_VARIANTS = $itvariants, total_SNPS = $itsnp, total_INDELS = $itindel where library_id= '$libnumber'"); 
+		$sth ->execute() or die "$DBI::errstr Error in updating the Variants Summary table\n";
 		$sth->finish();
 	} else { print "NOTICE: $libnumber Already exists in variants summary table\n"; }
 }
-
 
 sub VEPVARIANT {
   #INSERT INTO DATABASE: #variants_annotation table
@@ -950,7 +979,7 @@ sub VEPVARIANT {
 					$sth = $dbh->prepare("insert into variants_annotation ( library_id, chrom, position, consequence, gene_id, gene_name, transcript, feature, gene_type,protein_position, aminoacid_change, codon_change ) values (?,?,?,?,?,?,?,?,?,?,?,?)");
 					if (exists $extra{'SYMBOL'}) { $extra{'SYMBOL'} = uc($extra{'SYMBOL'}); }
 					$sth ->execute($libnumber, $chrom, $position, $consequence, $geneid, $extra{'SYMBOL'}, $transcriptid, $featuretype, $extra{'BIOTYPE'} , $pposition, $aminoacid, $codons) or die "\nERROR:\t Complication in variants_annotation table, consult documentation\n";
-					$sth = $dbh->prepare("update variants_result set variantclass = '$extra{'VARIANT_CLASS'}' where library_id = '$_[1]' and chrom = '$chrom' and position = $position"); $sth ->execute() or die "\nERROR:\t Complication in updating VarResult table, consult documentation\n";
+					$sth = $dbh->prepare("update variants_result set variant_class = '$extra{'VARIANT_CLASS'}' where library_id = '$libnumber' and chrom = '$chrom' and position = $position"); $sth ->execute() or die "\nERROR:\t Complication in updating VarResult table, consult documentation\n";
 					
 					$DBSNP{$chrom}{$position} = $dbsnp; #updating dbsnp	
 				}
@@ -969,674 +998,8 @@ sub VEPVARIANT {
 			$sth = $dbh->prepare("update variants_result set existing_variant = '$DBSNP{$chrom}{$position}' where library_id = '$libnumber' and chrom = '$chrom' and position = $position"); $sth ->execute();
 		}
 	}
-	$sth = $dbh->prepare("update variants_summary set status = 'done' where library_id= '$_[1]'"); #set variants_summary status as done
+	$sth = $dbh->prepare("update variants_summary set status = 'done' where library_id= '$libnumber'"); #set variants_summary status as done
 	$sth ->execute();
-}
-
-
-sub DBVARIANTSZ{	
-  print "\n\tINSERTING VARIANTS INTO THE DATABASE\n\n";
-  #disconnecting and connecting again to database just incase
-  $dbh->disconnect(); 
-  $dbh = mysql();
-
-  $_[1] =~ /^library_(\d*)$/;
-  my $libnumber = "$1";
-  my $folder = undef;
-
-  #VEP file
-  my @splitinput = split('\/', $_[0]);
-  foreach my $i (0..$#splitinput-1){$folder.="$splitinput[$i]/";$i++;}
-  my $information = fileparse($_[0], qr/(\.vcf)?$/);
-  
-  #variant_metadata
-  my $gatk_version = ( ( split('\/',$GATKDIR)) [-2] ); my $vep_version = ( ( split('\/',$VEP)) [-4] ); my $picard_version = ( ( split('\/',$PICARDDIR)) [-2] );
-
-  #OUTPUT file
-  my $output = "$folder$information".".v1table";
-  my $output2 = "$folder$information".".v2table";
-  open(OUTDBVAR,">$output");
-  open(OUTDBVAR2,">$output2");
-  
-  print OUTDBVAR "#CHR\tPOS\tREF\tALT\tQUAL\tCLASS\t";
-  print OUTDBVAR "ZYGOSITY\tdbSNP\n";
-  
-  print OUTDBVAR2 "#CHR\tPOS\tCONQ\t";
-  print OUTDBVAR2 "GENE\tSYMBOL\tTRANSCRIPT\t";
-  print OUTDBVAR2 "FEATURE\tTYPE OF GENE\tPROTEIN POSITION\t";
-  print OUTDBVAR2 "AA CHANGE\tCODON CHANGE\n";
-  my $date = `date +%Y-%m-%d`;
-
-  #initializing the hash tables . . .
-  %VCFhash = ();
-  %VEPhash = ();
-  %ExtraWork = ();
-  #running through subroutines . . . 
-  VEPVARIANT($_[0]);
-  my ($itsnp,$itindel,$itvariants) = 0;
-  #printing to output table & variant_results table
-  #VARIANT_SUMMARY
-  $sth = $dbh->prepare("insert into variants_summary ( library_id, ANN_version, Picard_version, GATK_version, date ) values (?,?,?,?,?)");
-  $sth ->execute($libnumber, $vep_version, $picard_version, $gatk_version, $date);
-  #VARIANT_RESULTS
-  foreach my $abc (sort keys %VCFhash) {
-    foreach my $def (sort {$a <=> $b} keys %{ $VCFhash{$abc} }) {
-      my @vcf = split('\|', $VCFhash{$abc}{$def});
-      my @ext = split('\|', $ExtraWork{$abc}{$def});
-      if ($vcf[3] =~ /,/){
-        my $first = split(",",$vcf[1]);
-        if (length $vcf[0] == length $first){
-          $itvariants++; $itsnp++;
-        }
-        else {
-          $itvariants++; $itindel++;
-        }
-      }
-      elsif (length $vcf[0] == length $vcf[1]){
-        $itvariants++; $itsnp++;
-      }
-      else {
-        $itvariants++; $itindel++;
-      }
-              
-      print OUTDBVAR "$abc\t$def\t$vcf[0]\t$vcf[1]\t$vcf[2]\t$ext[0]\t";
-      print OUTDBVAR "$vcf[3]\t$ext[1]\n";
-              
-      #to variant_result
-      $sth = $dbh->prepare("insert into variants_result ( library_id, chrom, position, ref_allele, alt_allele, quality, variant_class,
-                           zygosity, existing_variant ) values (?,?,?,?,?,?,?,?,?)");
-      $sth ->execute($libnumber, $abc, $def, $vcf[0], $vcf[1], $vcf[2], $ext[0], $vcf[3], $ext[1]);
-    }
-  }	
-  close (OUTDBVAR);	
-  foreach my $abc (sort keys %VEPhash) {
-    foreach my $def (sort {$a <=> $b} keys %{ $VEPhash{$abc} }) {
-      foreach my $ghi (sort keys %{ $VEPhash{$abc}{$def} }) {
-        foreach my $jkl (sort keys %{ $VEPhash{$abc}{$def}{$ghi} }) {
-          foreach my $mno (sort keys %{ $VEPhash{$abc}{$def}{$ghi}{$jkl} }){
-            my @vep = split('\|', $VEPhash{$abc}{$def}{$ghi}{$jkl}{$mno});
-            if(length($vep[4]) < 1){$vep[4] = "-";}
-            if (length($vep[1]) < 1) {$vep[1] = "-";}
-            print OUTDBVAR2 "$abc\t$def\t$ghi\t";
-            print OUTDBVAR2 "$vep[1]\t$vep[8]\t$vep[2]\t";
-            print OUTDBVAR2 "$vep[0]\t$vep[7]\t$vep[4]\t";
-            print OUTDBVAR2 "$vep[5]\t$vep[6]\n";
-            
-            #to variants_annotation
-            $sth = $dbh->prepare("insert into variants_annotation ( library_id, chrom, position, consequence, gene_id, gene_name,
-                                transcript, feature, gene_type,protein_position, aminoacid_change, codon_change ) values
-                                (?,?,?,?,?,?,?,?,?,?,?,?)");
-            $sth ->execute($libnumber, $abc, $def, $ghi, $vep[1], $vep[8], $vep[2], $vep[0], $vep[7], $vep[4], $vep[5], $vep[6]);
-          }
-        }
-      }
-    }
-  }
-  close (OUTDBVAR2);
-  
-  #VARIANT_SUMMARY
-  $syntax = "update variants_summary set total_VARIANTS = $itvariants, total_SNPS = $itsnp, 
-  total_INDELS = $itindel, status = \'done\' where library_id like \"$libnumber\"";
-  $sth = $dbh->prepare($syntax);
-  $sth ->execute();
-}
-sub VEPVARIANTZ { #import vep variants annotation to database
-  #working on VEP variants
-  my %Geneinfo = ''; my %Transcriptinfo = ''; my %Conqinfo = ''; my %Varclass = '';
-  my %Featureinfo = ''; my %Proinfo = ''; my %Prochangeinfo = ''; my %Codoninfo = '';
-  my %dbSNPinfo = ''; my %locinfo = ''; my %Entrezinfo = ''; my %GENEtype = '';
-  my %GENEname = ''; my $position; my %location = '';
-  unless(open(FILE,$_[0])){print "File \'$_[0]\' doesn't exist\n";exit;}
-  my $verd;
-  my @file = <FILE>;
-  chomp @file;
-  close (FILE);
-  foreach my $chr (@file){
-    unless ($chr =~ /^#/){
-      my @chrdetails = split('\t', $chr);
-      
-      #removing the random chromosomes (scaffolds) - because no vital information can be found for them.
-      my @morechrsplit = split(';', $chrdetails[7]);
-      if (((split(':', $chrdetails[9]))[0]) eq '0/1'){$verd = "heterozygous";}
-      elsif (((split(':', $chrdetails[9]))[0]) eq '1/1'){$verd = "homozygous";}
-      elsif (((split(':', $chrdetails[9]))[0]) eq '1/2'){$verd = "heterozygous alternate";}
-      
-      #Processing the VEP section
-      my @finalchrsplit = split("\,",(((split('=',((split(';',$chrdetails[7]))[-1])))[1]))); 
-      foreach my $FCR (0..$#finalchrsplit){
-        my @vepdetails = split('\|', $finalchrsplit[$FCR]);
-        if ($vepdetails[1] !~ /WITHIN_NON_CODING_GENE/){
-      
-          #VCFhash information
-          $VCFhash{$chrdetails[0]}{$chrdetails[1]} = "$chrdetails[3]|$chrdetails[4]|$chrdetails[5]|$verd";
-      
-          if ($vepdetails[14] < 1) {
-            $vepdetails[14] = "-";
-          }
-          $location{"$chrdetails[0]|$chrdetails[1]|$vepdetails[1]|$vepdetails[14]|$vepdetails[4]"} = "$chrdetails[0]|$chrdetails[1]|$vepdetails[1]|$vepdetails[14]|$vepdetails[4]"; #specifying location with consequence.
-          
-          #GENE - 1
-          if (exists $Geneinfo{$chrdetails[0]}{$chrdetails[1]}{$vepdetails[1]}{$vepdetails[14]}{$vepdetails[4]}){
-            unless ($Geneinfo{$chrdetails[0]}{$chrdetails[1]}{$vepdetails[1]}{$vepdetails[14]}{$vepdetails[4]} eq $vepdetails[4]){
-              print "something is wrong with the code >> GENE";
-              print "\na $chrdetails[0]\tb $chrdetails[1]\tc $vepdetails[14]\td $vepdetails[4]\te $vepdetails[4]\tf $Geneinfo{$chrdetails[0]}{$chrdetails[1]}{$vepdetails[1]}{$vepdetails[14]}{$vepdetails[4]}\n";		
-            }
-          }
-          else {$Geneinfo{$chrdetails[0]}{$chrdetails[1]}{$vepdetails[1]}{$vepdetails[14]}{$vepdetails[4]} = $vepdetails[4];}
-          
-          #TRANSCRIPT - 2
-          if (exists $Transcriptinfo{$chrdetails[0]}{$chrdetails[1]}{$vepdetails[1]}{$vepdetails[14]}{$vepdetails[4]}){
-            unless ($Transcriptinfo{$chrdetails[0]}{$chrdetails[1]}{$vepdetails[1]}{$vepdetails[14]}{$vepdetails[4]} eq $vepdetails[6]){
-              my $temp1details = "$Transcriptinfo{$chrdetails[0]}{$chrdetails[1]}{$vepdetails[1]}{$vepdetails[14]}{$vepdetails[4]},$vepdetails[6]";
-              $Transcriptinfo{$chrdetails[0]}{$chrdetails[1]}{$vepdetails[1]}{$vepdetails[14]}{$vepdetails[4]} = $temp1details;
-            }
-          }
-          else {$Transcriptinfo{$chrdetails[0]}{$chrdetails[1]}{$vepdetails[1]}{$vepdetails[14]}{$vepdetails[4]} = $vepdetails[6];}
-          
-          #CONSEQUENCE - 3
-          if (exists $Conqinfo{$chrdetails[0]}{$chrdetails[1]}{$vepdetails[1]}{$vepdetails[14]}{$vepdetails[4]} ){
-            unless ($Conqinfo{$chrdetails[0]}{$chrdetails[1]}{$vepdetails[1]}{$vepdetails[14]}{$vepdetails[4]} eq $vepdetails[1]){
-              print "something is wrong with the code >> consequence";
-              print "\na $chrdetails[0]\tb $chrdetails[1]\tc $vepdetails[14]\td $vepdetails[4]\te $vepdetails[1]\tf $Conqinfo{$chrdetails[0]}{$chrdetails[1]}{$vepdetails[1]}{$vepdetails[14]}{$vepdetails[4]}\n";		
-              #exit;
-            }
-          }
-          else {$Conqinfo{$chrdetails[0]}{$chrdetails[1]}{$vepdetails[1]}{$vepdetails[14]}{$vepdetails[4]} = $vepdetails[1];}
-          
-          #VARIANT CLASS - 4
-          if (exists $Varclass{$chrdetails[0]}{$chrdetails[1]}{$vepdetails[1]}{$vepdetails[14]}{$vepdetails[4]}){
-            unless ($Varclass{$chrdetails[0]}{$chrdetails[1]}{$vepdetails[1]}{$vepdetails[14]}{$vepdetails[4]} eq $vepdetails[20]){
-              print "something is wrong with the code >> variantclass";
-              print "\na $chrdetails[0]\tb $chrdetails[1]\tc $vepdetails[14]\td $vepdetails[4]\te $vepdetails[20]\tf $Varclass{$chrdetails[0]}{$chrdetails[1]}{$vepdetails[1]}{$vepdetails[14]}{$vepdetails[4]}\n";		
-              #exit;
-            }
-          }
-          else {$Varclass{$chrdetails[0]}{$chrdetails[1]}{$vepdetails[1]}{$vepdetails[14]}{$vepdetails[4]} = $vepdetails[20];}
-         
-          #FEATURE TYPE - 5
-          if (exists $Featureinfo{$chrdetails[0]}{$chrdetails[1]}{$vepdetails[1]}{$vepdetails[14]}{$vepdetails[4]}){
-            unless ($Featureinfo{$chrdetails[0]}{$chrdetails[1]}{$vepdetails[1]}{$vepdetails[14]}{$vepdetails[4]} eq $vepdetails[5]){
-              print "something is wrong with the code >> feature type";
-              print "\na $chrdetails[0]\tb $chrdetails[1]\tc $vepdetails[14]\td $vepdetails[4]\te $vepdetails[5]\tf $Featureinfo{$chrdetails[0]}{$chrdetails[1]}{$vepdetails[1]}{$vepdetails[14]}{$vepdetails[4]}\n";		
-            }
-          }
-          else {$Featureinfo{$chrdetails[0]}{$chrdetails[1]}{$vepdetails[1]}{$vepdetails[14]}{$vepdetails[4]} = $vepdetails[5];}
-          
-          #PROTEIN POSITION - 6
-          if (exists $Proinfo{$chrdetails[0]}{$chrdetails[1]}{$vepdetails[1]}{$vepdetails[14]}{$vepdetails[4]}){
-            unless ($Proinfo{$chrdetails[0]}{$chrdetails[1]}{$vepdetails[1]}{$vepdetails[14]}{$vepdetails[4]} eq $vepdetails[14]){
-              print "something is wrong with the code >> protein position";
-              print "\na $chrdetails[0]\tb $chrdetails[1]\tc $vepdetails[14]\td $vepdetails[4]\te $vepdetails[14]\tf $Proinfo{$chrdetails[0]}{$chrdetails[1]}{$vepdetails[1]}{$vepdetails[14]}{$vepdetails[4]}\n";		
-            }		
-          }
-          else {$Proinfo{$chrdetails[0]}{$chrdetails[1]}{$vepdetails[1]}{$vepdetails[14]}{$vepdetails[4]} = $vepdetails[14];}
-         
-          #PROTEIN CHANGE - 7 (or Amino Acid)
-          if (exists $Prochangeinfo{$chrdetails[0]}{$chrdetails[1]}{$vepdetails[1]}{$vepdetails[14]}{$vepdetails[4]}){
-            unless ($Prochangeinfo{$chrdetails[0]}{$chrdetails[1]}{$vepdetails[1]}{$vepdetails[14]}{$vepdetails[4]} eq $vepdetails[15]){
-              my $temp2details = "$Prochangeinfo{$chrdetails[0]}{$chrdetails[1]}{$vepdetails[1]}{$vepdetails[14]}{$vepdetails[4]},$vepdetails[15]";
-              $Prochangeinfo{$chrdetails[0]}{$chrdetails[1]}{$vepdetails[1]}{$vepdetails[14]}{$vepdetails[4]} = $temp2details;
-            }
-          }
-          else {$Prochangeinfo{$chrdetails[0]}{$chrdetails[1]}{$vepdetails[1]}{$vepdetails[14]}{$vepdetails[4]} = $vepdetails[15];}
-          
-          #CODON CHANGE - 8
-          if (exists $Codoninfo{$chrdetails[0]}{$chrdetails[1]}{$vepdetails[1]}{$vepdetails[14]}{$vepdetails[4]}){
-            unless ($Codoninfo{$chrdetails[0]}{$chrdetails[1]}{$vepdetails[1]}{$vepdetails[14]}{$vepdetails[4]} eq $vepdetails[16]){
-              my $temp3details = "$Codoninfo{$chrdetails[0]}{$chrdetails[1]}{$vepdetails[1]}{$vepdetails[14]}{$vepdetails[4]},$vepdetails[16]";
-              $Codoninfo{$chrdetails[0]}{$chrdetails[1]}{$vepdetails[1]}{$vepdetails[14]}{$vepdetails[4]} = $temp3details;
-            }		
-          }
-          else {$Codoninfo{$chrdetails[0]}{$chrdetails[1]}{$vepdetails[1]}{$vepdetails[14]}{$vepdetails[4]} = $vepdetails[16];}
-          
-          #dbSNP - 9
-          if (exists $dbSNPinfo{$chrdetails[0]}{$chrdetails[1]}{$vepdetails[1]}{$vepdetails[14]}{$vepdetails[4]}){
-            unless ($dbSNPinfo{$chrdetails[0]}{$chrdetails[1]}{$vepdetails[1]}{$vepdetails[14]}{$vepdetails[4]} eq $vepdetails[17]){
-              print "something is wrong with the code >> dbSNP";
-              print "\na $chrdetails[0]\tb $chrdetails[1]\tc $vepdetails[14]\td $vepdetails[4]\te $vepdetails[17]\tf $dbSNPinfo{$chrdetails[0]}{$chrdetails[1]}{$vepdetails[1]}{$vepdetails[14]}{$vepdetails[4]}\n";		
-            }		
-          }
-          else {$dbSNPinfo{$chrdetails[0]}{$chrdetails[1]}{$vepdetails[1]}{$vepdetails[14]}{$vepdetails[4]} = $vepdetails[17];}
-          
-          #GENE name - 10
-          if (exists $GENEname{$chrdetails[0]}{$chrdetails[1]}{$vepdetails[1]}{$vepdetails[14]}{$vepdetails[4]}){
-            unless ($GENEname{$chrdetails[0]}{$chrdetails[1]}{$vepdetails[1]}{$vepdetails[14]}{$vepdetails[4]} eq $vepdetails[3]){
-              print "something is wrong with the code >> genename";
-              print "\na $chrdetails[0]\tb $chrdetails[1]\tc $vepdetails[14]\td $vepdetails[4]\te $vepdetails[3]\tf $GENEname{$chrdetails[0]}{$chrdetails[1]}{$vepdetails[1]}{$vepdetails[14]}{$vepdetails[4]}\n";		
-            }	
-          }
-          else {$GENEname{$chrdetails[0]}{$chrdetails[1]}{$vepdetails[1]}{$vepdetails[14]}{$vepdetails[4]} = $vepdetails[3];}
-          
-          #GENE type - 11
-          if (exists $GENEtype{$chrdetails[0]}{$chrdetails[1]}{$vepdetails[1]}{$vepdetails[14]}{$vepdetails[4]}){
-            unless ($GENEtype{$chrdetails[0]}{$chrdetails[1]}{$vepdetails[1]}{$vepdetails[14]}{$vepdetails[4]} eq $vepdetails[7]){
-              my $temp4details = "$GENEtype{$chrdetails[0]}{$chrdetails[1]}{$vepdetails[1]}{$vepdetails[14]}{$vepdetails[4]},$vepdetails[7]";
-              $GENEtype{$chrdetails[0]}{$chrdetails[1]}{$vepdetails[1]}{$vepdetails[14]}{$vepdetails[4]} = $temp4details;
-            }	
-          }
-          else {$GENEtype{$chrdetails[0]}{$chrdetails[1]}{$vepdetails[1]}{$vepdetails[14]}{$vepdetails[4]} = $vepdetails[7];}
-        }
-      }
-    }
-  }
-
-  foreach my $alldetails (keys %location){
-        my ($chrdetails1, $chrdetails2, $consequences, $pposition, $genename) = split('\|', $alldetails);
-        #cleaning up the text
-        my $clean1 = CLEANUP($Varclass{$chrdetails1}{$chrdetails2}{$consequences}{$pposition}{$genename});
-        my $clean2 = CLEANUP($Featureinfo{$chrdetails1}{$chrdetails2}{$consequences}{$pposition}{$genename});
-        my $clean3 = CLEANUP($Geneinfo{$chrdetails1}{$chrdetails2}{$consequences}{$pposition}{$genename});
-        my $clean4 = CLEANUP($Transcriptinfo{$chrdetails1}{$chrdetails2}{$consequences}{$pposition}{$genename});
-        my $clean5 = CLEANUP($Conqinfo{$chrdetails1}{$chrdetails2}{$consequences}{$pposition}{$genename});
-        my $clean6 = CLEANUP($Proinfo{$chrdetails1}{$chrdetails2}{$consequences}{$pposition}{$genename});
-        my $clean7 = CLEANUP($Prochangeinfo{$chrdetails1}{$chrdetails2}{$consequences}{$pposition}{$genename});
-        my $clean8 = CLEANUP($Codoninfo{$chrdetails1}{$chrdetails2}{$consequences}{$pposition}{$genename});
-        my $clean9 = CLEANUP($dbSNPinfo{$chrdetails1}{$chrdetails2}{$consequences}{$pposition}{$genename});
-        my $clean10 = CLEANUP($GENEtype{$chrdetails1}{$chrdetails2}{$consequences}{$pposition}{$genename});
-        my $clean11 = CLEANUP($GENEname{$chrdetails1}{$chrdetails2}{$consequences}{$pposition}{$genename});
-        $VEPhash{$chrdetails1}{$chrdetails2}{$consequences}{$pposition}{$genename} = "$clean2|$clean3|$clean4|$clean5|$clean6|$clean7|$clean8|$clean10|$clean11";
-        $ExtraWork{$chrdetails1}{$chrdetails2} = "$clean1|$clean9";
-  }   
-}
-sub DBSNPDATVARIANTS{	
-  print "\n\tINSERTING SNPDAT VARIANTS INTO THE DATABASE\n\n";
-  #disconnecting and connecting again to database just incase
-  $dbh->disconnect(); 
-  $dbh = mysql();
-
-  $_[2] =~ /^library_(\d*)$/;
-  my $libnumber = $1;
-  my $folder = undef;
-
-  #VCF file
-  my @splitinput = split('\/', $_[1]);
-  foreach my $i (0..$#splitinput-1){$folder.="$splitinput[$i]/";$i++;}
-  my $information = fileparse($_[0], qr/(\.vcf)?$/);
-  
-  #variant_metadata
-   my $gatk_version = ( ( split('\/',$GATKDIR)) [-2] ); my $ann_version = ( ( split('\/',$SNPdat)) [-2] ); my $picard_version = ( ( split('\/',$PICARDDIR)) [-2] );
-
-  #OUTPUT file
-  my $output = "$folder$information".".v1table";
-  my $output2 = "$folder$information".".v2table";
-  
-  open(OUTDBVAR,">$output");
-  open(OUTDBVAR2,">$output2");
-  
-  print OUTDBVAR "#CHR\tPOS\tREF\tALT\tQUAL\tCLASS\t";
-  print OUTDBVAR "ZYGOSITY\tdbSNP\n";
-  
-  print OUTDBVAR2 "#CHR\tPOS\tCONQ\t";
-  print OUTDBVAR2 "GENE\tSYMBOL\tTRANSCRIPT\t";
-  print OUTDBVAR2 "FEATURE\tTYPE OF GENE\tPROTEIN POSITION\t";
-  print OUTDBVAR2 "AA CHANGE\tCODON CHANGE\n";
-  my $date = `date +%Y-%m-%d`;
-
-  #initializing the hash tables . . .
-  %VCFhash = ();
-  %VEPhash = ();
-  %ExtraWork = ();
-  #running through subroutines . . . 
-  SNPdatVARIANT($_[0], $_[1]);
-  my ($itsnp,$itindel,$itvariants) = 0;
-  #printing to output table & variant_results table
-  #VARIANT_SUMMARY
-  $sth = $dbh->prepare("insert into variants_summary ( library_id, ANN_version, Picard_version, GATK_version, date ) values (?,?,?,?,?)");
-  $sth ->execute($libnumber, $ann_version, $picard_version, $gatk_version, $date);
-
-  #VARIANT_RESULTS
-  foreach my $abc (sort keys %VCFhash) {
-    foreach my $def (sort {$a <=> $b} keys %{ $VCFhash{$abc} }) {
-      my @vcf = split('\|', $VCFhash{$abc}{$def});
-      my $variantclass;
-      my $first = split(",",$vcf[1]);
-      if ($vcf[3] =~ /,/){                   
-        if (length($vcf[0]) == length($first)){
-          $itvariants++; $itsnp++; $variantclass = "SNV";
-        }
-        elsif (length($vcf[0]) > length($first)) {
-          $itvariants++; $itindel++; $variantclass = "deletion";
-        }
-        elsif (length($vcf[0]) < length($first)) {
-          $itvariants++; $itindel++; $variantclass = "insertion";
-        }
-        else {
-          print "first False variant, cross-check asap"; exit; 
-        }
-      }
-      elsif (length $vcf[0] == length $vcf[1]){
-        $itvariants++; $itsnp++; $variantclass = "SNV";
-      }
-      elsif (length $vcf[0] > length ($vcf[1])) {
-        $itvariants++; $itindel++; $variantclass = "deletion";
-      }
-      elsif (length $vcf[0] < length ($vcf[1])) {
-        $itvariants++; $itindel++; $variantclass = "insertion";
-      }
-      else {
-        print "second False variant, cross-check asap\n"; exit;
-      }
-      print OUTDBVAR "$abc\t$def\t$vcf[0]\t$vcf[1]\t$vcf[2]\t$variantclass\t";
-      print OUTDBVAR "$vcf[3]\t$ExtraWork{$abc}{$def}\n";
-              
-      $sth = $dbh->prepare("insert into variants_result ( library_id, chrom, position, ref_allele, alt_allele, quality, variant_class,
-                          zygosity, existing_variant ) values (?,?,?,?,?,?,?,?,?)");
-      $sth ->execute($libnumber, $abc, $def, $vcf[0], $vcf[1], $vcf[2], $variantclass, $vcf[3], $ExtraWork{$abc}{$def});                  
-    }
-  }
-  close (OUTDBVAR);
-  
-  foreach my $abc (sort keys %VEPhash) {
-    foreach my $def (sort {$a <=> $b} keys %{ $VEPhash{$abc} }) {
-      foreach my $ghi (sort keys %{ $VEPhash{$abc}{$def} }) {
-          foreach my $jkl (sort keys %{ $VEPhash{$abc}{$def}{$ghi} }) {
-            my @vep = split('\|', $VEPhash{$abc}{$def}{$ghi}{$jkl});
-            
-            if(length($vep[4]) < 1){
-                $vep[4] = "-";
-            }
-            if (length($vep[1]) < 1) {
-                $vep[1] = "-";
-            }
-              print OUTDBVAR2 "$abc\t$def\t$ghi\t";
-              print OUTDBVAR2 "$vep[1]\t$vep[8]\t$vep[2]\t";
-              print OUTDBVAR2 "$vep[0]\t$vep[7]\t$vep[4]\t";
-              print OUTDBVAR2 "$vep[5]\t$vep[6]\n";
-              
-              #to variants_annotation
-              $sth = $dbh->prepare("insert into variants_annotation ( library_id, chrom, position, consequence, gene_id, gene_name,
-                                 transcript, feature, gene_type,protein_position, aminoacid_change, codon_change ) values
-                                (?,?,?,?,?,?,?,?,?,?,?,?)");
-              $sth ->execute($libnumber, $abc, $def, $ghi, $vep[1], $vep[8], $vep[2], $vep[0], $vep[7], $vep[4], $vep[5], $vep[6]);
-          }
-      }
-    }
-  }
-  close (OUTDBVAR2);
-  
-  #VARIANT_SUMMARY
-  $syntax = "update variants_summary set total_VARIANTS = $itvariants, total_SNPS = $itsnp, 
-  total_INDELS = $itindel, status = \'done\' where library_id like \"$libnumber\"";
-  $sth = $dbh->prepare($syntax);
-  $sth ->execute();
-}
-sub SNPdatVARIANT {
-  #working on VEP variants
-  my %Geneinfo = ''; my %Transcriptinfo = ''; my %Conqinfo = '';
-  my %Featureinfo = ''; my %Proinfo = ''; my %Prochangeinfo = ''; my %Codoninfo = '';
-  my %dbSNPinfo = ''; my %locinfo = ''; my %Entrezinfo = ''; my %GENEtype = '';
-  my %GENEname = ''; my $position; my %location = ''; my ($consqofgene,$idofgene, $codonchange, $aminoacid);
-	
-  unless(open(VAR,$_[0])){print "File \'$_[0]\' doesn't exist\n";exit;}
-  my $verd; my @variantfile = <VAR>; chomp @variantfile; close (VAR);
-  foreach my $chr (@variantfile){
-    unless ($chr =~ /^#/){
-      my @chrdetail = split('\t', $chr);
-      #removing the random chromosomes (scaffolds) - because no vital information can be found for them.
-      my @morechrsplit = split(';', $chrdetail[7]);
-      if (((split(':', $chrdetail[9]))[0]) eq '0/1'){$verd = "heterozygous";}
-      elsif (((split(':', $chrdetail[9]))[0]) eq '1/1'){$verd = "homozygous";}
-      elsif (((split(':', $chrdetail[9]))[0]) eq '1/2'){$verd = "heterozygous almyternate";}
-      #VCFhash information
-      $VCFhash{$chrdetail[0]}{$chrdetail[1]} = "$chrdetail[3]|$chrdetail[4]|$chrdetail[5]|$verd";
-    }
-  }
-  unless(open(FILE,$_[1])){print "File \'$_[0]\' doesn't exist\n";exit;}
-  my @file = <FILE>; chomp @file; close (FILE); shift(@file);
-  foreach my $chr2 (@file){
-    #Processing the ANNotation section
-    my @chrdetails = split('\t', $chr2);
-    $chrdetails[0] = "\L$chrdetails[0]";
-    if ($chrdetails[10] =~ /ID=AMISG/){
-      #getting gene id and name of gene
-      my @geneidlist = split("\;", $chrdetails[10]);
-      foreach (@geneidlist){
-        if($_ =~ /^ID=AMISG/){$idofgene = substr($_,3);}
-        last;
-      }
-              
-      #change codon format to be consistent
-      unless ($chrdetails[19] eq "NA"){
-        $chrdetails[19] = "\L$chrdetails[19]";
-    
-        my $aq = ((split('\[', $chrdetails[19],2))[0]); my $bq = ((split('\]', $chrdetails[19],2))[1]); 
-        my $dq = uc ((split('\[', ((split('\/', $chrdetails[19],2))[0]),2)) [1]); 
-        my $eq = uc ((split('\]',((split('\/', $chrdetails[19],2))[1]),2)) [0]);
-        $codonchange = "$aq$dq$bq/$aq$eq$bq";
-        $aminoacid = substr(substr($chrdetails[20],1),0,-1);
-      }else {
-        $codonchange = undef; $aminoacid = undef;
-      }
-      #determine the consequence of the SNP change
-      if($chrdetails[21] eq "N") {
-        if ($aminoacid =~ /^M/){$consqofgene = "START_LOST";}
-        elsif($aminoacid =~ /M$/){$consqofgene = "START_GAINED";}
-        elsif($aminoacid =~/^\-/){$consqofgene = "STOP_LOST";}
-        elsif($aminoacid =~ /\-$/){$consqofgene = "STOP_GAINED";}	
-        else {$consqofgene = "NON_SYNONYMOUS_CODING";}
-      }
-      elsif ($chrdetails[21] eq "Y"){
-        $consqofgene = "SYNONYMOUS_CODING";
-        $aminoacid = ((split('\/', $aminoacid,2))[0]);
-      }
-      elsif($chrdetails[21] eq "NA") {
-        if ($chrdetails[3] =~ /Intergenic/){$consqofgene = "INTERGENIC";}
-        elsif($chrdetails[3] =~ /Intronic/){$consqofgene = "INTRONIC";}
-        elsif($chrdetails[3] =~ /Exonic/){$consqofgene = "EXON";}
-        else {$consqofgene = "NA";}
-      }
-      else {
-        print "There's a problem with the consequence of the gene\n\n"; exit;
-      }
-      foreach (0..$#chrdetails){if ($chrdetails[$_] eq "NA"){ $chrdetails[$_] = undef;}} #converting NA to undef
-              
-      $location{"$chrdetails[0]|$chrdetails[1]|$consqofgene|$idofgene"} = "$chrdetails[0]|$chrdetails[1]|$consqofgene|$idofgene"; #specifying location with consequence.
-              
-      #GENE - 1
-      if (exists $Geneinfo{$chrdetails[0]}{$chrdetails[1]}{$consqofgene}{$idofgene}){
-        unless ($Geneinfo{$chrdetails[0]}{$chrdetails[1]}{$consqofgene}{$idofgene} eq $idofgene){
-          print "something is wrong with the code >> Geneinfo\n";
-          exit;
-        }
-      }
-      else {	
-        $Geneinfo{$chrdetails[0]}{$chrdetails[1]}{$consqofgene}{$idofgene} = $idofgene;
-      }
-      
-      #TRANSCRIPT - 2
-      if (exists $Transcriptinfo{$chrdetails[0]}{$chrdetails[1]}{$consqofgene}{$idofgene}){
-        unless ($Transcriptinfo{$chrdetails[0]}{$chrdetails[1]}{$consqofgene}{$idofgene} eq $AMIST{$idofgene}){
-          print "something is wrong with the code >> transcript\n";
-          exit;
-        }
-      }
-      else {	
-        $Transcriptinfo{$chrdetails[0]}{$chrdetails[1]}{$consqofgene}{$idofgene} = $AMIST{$idofgene};
-      } 	
-      
-      #CONSEQUENCE - 3
-      if (exists $Conqinfo{$chrdetails[0]}{$chrdetails[1]}{$consqofgene}{$idofgene} ){
-        unless ($Conqinfo{$chrdetails[0]}{$chrdetails[1]}{$consqofgene}{$idofgene} eq $consqofgene){
-          print "something is wrong with the code >> consequence\n";
-          exit;
-        }			
-      }
-      else {	
-        $Conqinfo{$chrdetails[0]}{$chrdetails[1]}{$consqofgene}{$idofgene} = $consqofgene;
-      }	
-        
-      #FEATURE TYPE - 5 #SNPdat
-      if (exists $Featureinfo{$chrdetails[0]}{$chrdetails[1]}{$consqofgene}{$idofgene}){
-        unless ($Featureinfo{$chrdetails[0]}{$chrdetails[1]}{$consqofgene}{$idofgene} eq $chrdetails[5]){
-          print "something is wrong with the code >> feature\n";
-          exit;
-        }			
-      }
-      else {	
-        $Featureinfo{$chrdetails[0]}{$chrdetails[1]}{$consqofgene}{$idofgene} = $chrdetails[5];
-      }
-
-      #PROTEIN POSITION - 6 #SNPdat this isn't provided
-      $Proinfo{$chrdetails[0]}{$chrdetails[1]}{$consqofgene}{$idofgene} = undef;
-
-      #PROTEIN CHANGE - 7 (or Amino Acid) #SNPdat
-      if (exists $Prochangeinfo{$chrdetails[0]}{$chrdetails[1]}{$consqofgene}{$idofgene}){
-        unless ($Prochangeinfo{$chrdetails[0]}{$chrdetails[1]}{$consqofgene}{$idofgene} eq $aminoacid){
-          my $temp1details = "$Prochangeinfo{$chrdetails[0]}{$chrdetails[1]}{$consqofgene}{$idofgene},$aminoacid";
-          $Prochangeinfo{$chrdetails[0]}{$chrdetails[1]}{$consqofgene}{$idofgene} = $temp1details;
-        }			
-      }
-      else {	
-        $Prochangeinfo{$chrdetails[0]}{$chrdetails[1]}{$consqofgene}{$idofgene} = $aminoacid;
-      }
-	
-      #CODON CHANGE - 8 #SNPdat
-      if (exists $Codoninfo{$chrdetails[0]}{$chrdetails[1]}{$consqofgene}{$idofgene}){
-        unless ($Codoninfo{$chrdetails[0]}{$chrdetails[1]}{$consqofgene}{$idofgene} eq $codonchange){
-          my $temp2details = "$Codoninfo{$chrdetails[0]}{$chrdetails[1]}{$consqofgene}{$idofgene},$codonchange";
-          $Codoninfo{$chrdetails[0]}{$chrdetails[1]}{$consqofgene}{$idofgene} = $temp2details;
-        }			
-      }
-      else {	
-        $Codoninfo{$chrdetails[0]}{$chrdetails[1]}{$consqofgene}{$idofgene} = $codonchange;
-      }
-      
-	#dbSNP - 9 #SNPdat # no dbSNP info for alligator
-	$dbSNPinfo{$chrdetails[0]}{$chrdetails[1]}{$consqofgene}{$idofgene} = undef;			
-	
-	#GENE name - 10 #name of gene from the alligator gene list. #SNPdat
-      if (exists $GENEname{$chrdetails[0]}{$chrdetails[1]}{$consqofgene}{$idofgene}){
-        unless ($GENEname{$chrdetails[0]}{$chrdetails[1]}{$consqofgene}{$idofgene} eq $AMISG{$idofgene}){
-          print "something is wrong with the code >> gene name\n";
-          exit;
-        }
-	}
-	else {	
-	  $GENEname{$chrdetails[0]}{$chrdetails[1]}{$consqofgene}{$idofgene} = $AMISG{$idofgene};
-	}
-	
-	#GENE type - 11 #SNPdat
-      if (exists $GENEtype{$chrdetails[0]}{$chrdetails[1]}{$consqofgene}{$idofgene}){
-        unless ($GENEtype{$chrdetails[0]}{$chrdetails[1]}{$consqofgene}{$idofgene} eq $chrdetails[3]){
-          print "something is wrong with the code >> gene type\n";
-          exit;
-        }
-	}
-	else {	
-	  $GENEtype{$chrdetails[0]}{$chrdetails[1]}{$consqofgene}{$idofgene} = $chrdetails[3];
-	}
-    }
-  }
-
-  foreach my $alldetails (keys %location){
-    my ($chrdetails1, $chrdetails2, $consequences, $genename) = split('\|', $alldetails);
-    #cleaning up the text
-    my $clean2 = CLEANUP($Featureinfo{$chrdetails1}{$chrdetails2}{$consequences}{$genename});
-    my $clean3 = CLEANUP($Geneinfo{$chrdetails1}{$chrdetails2}{$consequences}{$genename});
-    my $clean4 = CLEANUP($Transcriptinfo{$chrdetails1}{$chrdetails2}{$consequences}{$genename});
-    my $clean5 = CLEANUP($Conqinfo{$chrdetails1}{$chrdetails2}{$consequences}{$genename});
-    my $clean6 = CLEANUP($Proinfo{$chrdetails1}{$chrdetails2}{$consequences}{$genename});
-    my $clean7 = CLEANUP($Prochangeinfo{$chrdetails1}{$chrdetails2}{$consequences}{$genename});
-    my $clean8 = CLEANUP($Codoninfo{$chrdetails1}{$chrdetails2}{$consequences}{$genename});
-    my $clean9 = CLEANUP($dbSNPinfo{$chrdetails1}{$chrdetails2}{$consequences}{$genename});
-    my $clean10 = CLEANUP($GENEtype{$chrdetails1}{$chrdetails2}{$consequences}{$genename});
-    my $clean11 = CLEANUP($GENEname{$chrdetails1}{$chrdetails2}{$consequences}{$genename});
-    $VEPhash{$chrdetails1}{$chrdetails2}{$consequences}{$genename} = "$clean2|$clean3|$clean4|$clean5|$clean6|$clean7|$clean8|$clean10|$clean11";
-    $ExtraWork{$chrdetails1}{$chrdetails2} = $clean9;
-  } 
-}
-
-
-sub CLEANUP {
-  #cleaning up the VEP variants so that it doesn't have repetitions in the output
-  my @unclean = split(',', $_[0]);
-  my ($cleansyntax, %Hashdetails, %Hash2) = undef;
-  foreach (0..$#unclean){
-    if ($unclean[$_] =~ /^[a-zA-Z0-9]/){
-      $Hashdetails{$unclean[$_]} = $_;
-    }
-  }
-  foreach my $unique (keys %Hashdetails){
-    if ($unique =~ /^[a-zA-Z0-9]/){
-      $Hash2{$Hashdetails{$unique}} = $unique;
-    }
-  }
-  foreach my $final (sort keys %Hash2){
-    if ($Hash2{$final} =~ /^[a-zA-Z0-9]/){
-      $cleansyntax .= ",$Hash2{$final}";
-    }
-  }
-  my $returnclean = substr($cleansyntax, 1);
-  return $returnclean;
-}
-sub ALLIGATOR {
-  my ($theparent, $theid); 
-  unless(open(FILE,$_[0])){exit "File \'$_[0]\' doesn't exist\n";}
-  my @file = <FILE>;
-  chomp @file; shift (@file);
-  close (FILE);
-  foreach my $line (@file){
-    my @details = split(',', $line);
-    $AMISG{$details[0]} = $details[1];
-  } 
-  unless(open(FILER,$_[1])){exit "File \'$_[1]\' doesn't exist\n";}
-  my @filer = <FILER>;
-  chomp @filer; shift (@filer);
-  close (FILER);
-  foreach (@filer){
-    my @newdetails = split('\t', $_);
-    if ($newdetails[8] =~ /Parent=AMISG/){
-	my @whatIwant = split("\;", $newdetails[8]);
-	foreach (@whatIwant){
-	  if ($_ =~ /ID=/){
-	    $theid = substr($_, 3);
-        }
-	  elsif ($_ =~ /Parent=/){
-	    $theparent = substr($_, 7);
-        }
-	}
-	$AMIST{$theparent} = $theid;
-    }
-  }    
-}
-sub SUMMARYstmts{
-  #transcripts_summary from the database
-  $dbh = mysql();
-  print "\n\tEXECUTING SELECT STATEMENT ON THE DATABASE TABLES \n";
-  $syntax = "select count(*) from transcripts_summary";
-  $sth = $dbh->prepare($syntax);
-  $sth->execute or die "SQL Error: $DBI::errstr\n";
-  while (@row = $sth->fetchrow_array() ) {print "Number of rows in \"transcripts_summary\" table \t:\t @row\n";}
-  #genes_fpkm
-  $syntax = "select count(*) from genes_fpkm";
-  $sth = $dbh->prepare($syntax);
-  $sth->execute or die "SQL Error: $DBI::errstr\n";
-  while (@row = $sth->fetchrow_array() ) {print "Number of rows in \"genes_fpkm\" table \t\t:\t @row\n";}
-  #isoforms_fpkm
-  $syntax = "select count(*) from isoforms_fpkm";
-  $sth = $dbh->prepare($syntax);
-  $sth->execute or die "SQL Error: $DBI::errstr\n";
-  while (@row = $sth->fetchrow_array() ) {print "Number of rows in \"isoforms_fpkm\" table \t:\t @row\n";}
-  #variant_summary
-  $syntax = "select count(*) from variants_summary";
-  $sth = $dbh->prepare($syntax);
-  $sth->execute or die "SQL Error: $DBI::errstr\n";
-  while (@row = $sth->fetchrow_array() ) {print "Number of rows in \"variants_summary\" table \t:\t @row\n";}
-  #variant_list
-  $syntax = "select count(*) from variants_result";
-  $sth = $dbh->prepare($syntax);
-  $sth->execute or die "SQL Error: $DBI::errstr\n";
-  while (@row = $sth->fetchrow_array() ) {print "Number of rows in \"variants_results\" table \t:\t @row\n";}
-  #variant_annotion
-  $syntax = "select count(*) from variants_annotation";
-  $sth = $dbh->prepare($syntax);
-  $sth->execute or die "SQL Error: $DBI::errstr\n";
-  while (@row = $sth->fetchrow_array() ) {print "Number of rows in \"variants_annotation\" table \t:\t @row\n";}
-  #frnak_metadata
-  $syntax = "select count(*) from frnak_metadata";
-  $sth = $dbh->prepare($syntax);
-  $sth->execute or die "SQL Error: $DBI::errstr\n";
-  while (@row = $sth->fetchrow_array() ) {print "Number of rows in \"frnak_metadata\" table \t:\t @row\n";}
 }
 sub NOTIFICATION {
   my $notification = '/home/modupe/.LOG/note.txt';
@@ -1646,13 +1009,106 @@ sub NOTIFICATION {
   close NOTE;
   system "rm -rf $notification";
 }
+
+sub main {
+  foreach my $count (0..$#VAR) {
+		while(1) {
+			if ($queue->pending() < 100) {
+				$queue->enqueue($VAR[$count]);
+				last;
+			}
+		}
+	}
+	foreach(1..5) { $queue-> enqueue(undef); }
+}
+
+sub cuffprocessor {
+	my $query;
+	while ($query = $queue->dequeue()){
+		geneparseinput(@$query);
+	}
+}
+
+sub gtfcuffprocessor {
+	my $query;
+	while ($query = $queue->dequeue()){
+		gtfcuffparseinput(@$query);
+	}
+}
+
+sub isoprocessor {
+	my $query;
+	while ($query = $queue->dequeue()){
+		isoparseinput(@$query);
+	}
+}
+
+sub strprocessor {
+	my $query;
+	while ($query = $queue->dequeue()){
+		strparseinput(@$query);
+	}
+}
+
+sub gtfcuffparseinput {
+	$syntax = "insert into genes_fpkm (library_id, gene_id, chrom_no, chrom_start, chrom_stop, coverage, fpkm, fpkm_conf_low, fpkm_conf_high ) values (?,?,?,?,?,?,?,?,?)";
+	foreach my $a (@_) {
+		$dbh = mysql();
+		$sth = $dbh->prepare($syntax);
+		my @array = split(",",$ARFPKM{$a});
+		$sth -> execute(@array, $BEFPKM{$a}, $CHFPKM{$a}, $cfpkm{$a}, $dfpkm{$a}, $dlfpkm{$a}, $dhfpkm{$a}) or print "\nERROR:\t Complication in genes_fpkm table, consult documentation\n";
+		$sth->finish;
+	}
+}
+sub geneparseinput{
+	$syntax = "insert into genes_fpkm (library_id, gene_id, gene_short_name, chrom_no, chrom_start, chrom_stop, coverage, fpkm, fpkm_conf_low, fpkm_conf_high, fpkm_status ) values (?,?,?,?,?,?,?,?,?,?,?)";
+  foreach (@_){
+		chomp;
+		$dbh = mysql();
+		$sth = $dbh->prepare($syntax);
+		my ($track, $class, $ref_id, $gene, $gene_name, $tss, $locus, $length, $coverage, $fpkm, $fpkm_low, $fpkm_high, $fpkm_stat ) = split /\t/;
+		unless ($track eq "tracking_id"){ #check & specifying undefined variables to null
+			if($coverage =~ /-/){$coverage = undef;}
+			my ($chrom_no, $chrom_start, $chrom_stop) = $locus =~ /^(.+)\:(.+)\-(.+)$/; $chrom_start++;
+			$sth ->execute($lib_id, $gene, $gene_name, $chrom_no, $chrom_start, $chrom_stop, $coverage, $fpkm, $fpkm_low, $fpkm_high, $fpkm_stat ) or print "\nERROR:\t Complication in genes_fpkm table, consult documentation\n";
+			$sth->finish;
+		}
+	}
+}
+
+sub strparseinput{
+	$syntax = "insert into genes_fpkm (library_id, gene_id, gene_short_name, chromnumber, chromstart, chromstop, coverage, fpkm, tpm ) values (?,?,?,?,?,?,?,?,?)";
+	foreach my $a (@_) {
+		$dbh = mysql();
+		$sth = $dbh->prepare($syntax);
+		my @array = split(",",$ARFPKM{$a});
+		$sth -> execute(@array, $BEFPKM{$a}, $CHFPKM{$a}, $cfpkm{$a}, $dfpkm{$a}, $tpm{$a}) or print "\nERROR:\t Complication in genes_fpkm table, consult documentation\n";
+		$sth->finish;
+	}
+}
+
+sub isoparseinput{
+	$syntax = "insert into isoforms_fpkm (library_id, tracking_id, gene_id, gene_short_name, chrom_no, chrom_start, chrom_stop, coverage, fpkm, fpkm_conf_low, fpkm_conf_high, fpkm_status ) values (?,?,?,?,?,?,?,?,?,?,?,?)";
+  foreach (@_){
+		chomp;
+		$dbh = mysql();
+		$sth = $dbh->prepare($syntax);
+		my ($track, $class, $ref_id, $gene, $gene_name, $tss, $locus, $length, $coverage, $fpkm, $fpkm_low, $fpkm_high, $fpkm_stat ) = split /\t/;
+		unless ($track eq "tracking_id"){ #check & specifying undefined variables to null
+			if($coverage =~ /-/){$coverage = undef;}
+			my ($chrom_no, $chrom_start, $chrom_stop) = $locus =~ /^(.+)\:(.+)\-(.+)$/; $chrom_start++;
+			$sth ->execute($lib_id, $track, $gene, $gene_name, $chrom_no, $chrom_start, $chrom_stop, $coverage, $fpkm, $fpkm_low, $fpkm_high, $fpkm_stat ) or print "\nERROR:\t Complication in isoforms_fpkm table, consult documentation\n";
+			$sth->finish;
+		}
+	}
+}				
+
+
 # - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 close STDOUT; close STDERR;
 print "\n\n*********DONE*********\n\n";
 # - - - - - - - - - - - - - - - - - - EOF - - - - - - - - - - - - - - - - - - - - - -
 exit;
-
-#!/usr/bin/perl
 
 # - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 # - - - - - - - - - - - - - - - - - H E A D E R - - - - - - - - - - - - - - - - - - -
