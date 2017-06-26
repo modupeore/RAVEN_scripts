@@ -31,7 +31,7 @@ $dbh = mysql();
 #GETTING ALL THE LIBRARIES FROM THE DATABASE.
 my $libraries;
 #for Chicken
-my $libras = "select a.library_id from vw_libraryinfo a join genes_summary b on a.library_id = b.library_id where a.species = \"gallus\" and b.status = 'done'";
+my $libras = "select a.library_id from bird_libraries a join genes_summary b on a.library_id = b.library_id where a.species = \"gallus\" and b.status = 'done'";
 $sth = $dbh->prepare($libras); $sth->execute or die "SQL Error: $DBI::errstr\n";
 
 while ( my $row = $sth->fetchrow_array() ) {
@@ -53,10 +53,10 @@ foreach my $file (@libraries){
 		print "Working on $file...\n";
 		system("mkdir -p $basepath/$file");
 		my $syntax= "select
-			c.chrom_no, c.gene_id, c.gene_short_name, a.species, c.fpkm_status,
+			c.chrom_no, c.gene_id, c.gene_short_name, a.species, c.fpkm_status, a.tissue, a.line,
 			c.coverage, c.tpm, c.fpkm, c.fpkm_conf_low, c.fpkm_conf_high,
 			a.library_id, c.chrom_start, c.chrom_stop
-			from vw_libraryinfo a join genes_fpkm c 
+			from bird_libraries a join genes_fpkm c 
 				on a.library_id = c.library_id
 			where a.species = \"gallus\" and a.library_id = $file";
 
@@ -76,7 +76,9 @@ foreach my $file (@libraries){
 					$row2[$list] = "NULL";
 				}
 				$row2[$list] =~ s/^'|'$//g;
-				if ($list < 5) {
+				$row2[5] = uc($row2[5]); $row2[6] = uc($row2[6]); #uppercase line and tissue
+				if ($row2[7] eq "NULL"){ $row2[7] = 0; } #change tpm from NULL to zero
+				if ($list < 7) {
 					print OUT "\'$row2[$list]\',";
 				}
 				else {
@@ -99,7 +101,7 @@ foreach my $file (@libraries){
 #changing status to done
 if ($#libraries >= 1) {
 	my $syntax = "update genes_summary set nosql = 'done' where library_id in \($libraries\)";
-	$sth = $dbh->prepare($syntax); $sth->execute() or die "$DBI::errstr Failed to update variant summary\n";
+	$sth = $dbh->prepare($syntax); $sth->execute() or die "$DBI::errstr Failed to update genes summary\n";
 	print "\n\tFinished with nosql output \n";
 }
 # - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -

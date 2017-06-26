@@ -14,7 +14,7 @@ use routine;
 use passw;
 
 # DATABASE ATTRIBUTES
-my $basepath = "/home/modupe/public_html/OtherAtlas";
+my $basepath = "/home/modupe/public_html/TAFiles/VariantAtlas";
 `mkdir -p $basepath`;
 my $statusfile = "$basepath/mystatus.txt";
 # - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
@@ -79,6 +79,8 @@ foreach my $file (@libraries){
 					$row2[$list] = "NULL";
 				}
 				$row2[$list] =~ s/^'|'$//g;
+				$row2[11] = uc($row2[11]); $row2[12] = uc($row2[12]); #uppercase line and tissue
+				
 				if ($list < 18) {
 					print OUT "\'$row2[$list]\',";
 				}

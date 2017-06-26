@@ -3,8 +3,8 @@
 # - - - - - - - - - - - - - - - - - H E A D E R - - - - - - - - - - - - - - - - - - -
 # - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 
-# MANUAL for extracting stuff from the database
-#10/26/2015
+# MANUAL for extracting genes stuff from the database
+#MOA 2017
 
 # - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 # - - - - - - - - - - - - - - U S E R  V A R I A B L E S- - - - - - - - - - - - - - -
@@ -14,8 +14,8 @@ use Getopt::Long;
 use Pod::Usage;
 # DATABASE ATTRIBUTES
 
-my $basepath = "/home/modupe/public_html/TAFiles/VariantAtlas";
-my $finalpath = "/home/modupe/public_html/FBTranscriptAtlas/VARIANTS";
+my $basepath = "/home/modupe/public_html/GenesAtlas";
+my $finalpath = "/home/modupe/public_html/OtherTranscriptAtlas";
 `mkdir -p $finalpath`;
 my $statusfile = "$finalpath/myFBstatus";
 open(STDOUT, '>', "$statusfile\.log") or die "Log file doesn't exist";
@@ -41,55 +41,41 @@ unless ($library) {
 	}
 	foreach my $key (sort {$a <=> $b} keys %HashDirectory) {
 		#import to FastBit file
-		my $execute = "ardea -d $finalpath/chickenvariants -m \"
-			class:char,
-			zygosity:char,
-			dbsnp:char,
-			consequence:char,
+		my $execute = "ardea -d $finalpath/chickengenes -m \"
+			chrom:char,
 			geneid:char,
 			genename:char,
-			transcript:char,
-			feature:char,
-			genetype:char,
-			ref:char,
-			alt:char,
-			line:char,
-			tissue:char,
-			chrom:char,
-			aachange:char,
-			codon:char,
 			species:key,
-			notes:text, 
-			quality:double,
+			fpkmstatus:char,
+			tissue:char,
+			line:char,
+			coverage:double,
+			tpm:double,
+			fpkm:double,
+			fpkmlow:double,
+			fpkmhigh:double,
 			library:int,
-			position:int,
-			proteinposition:int\" -t $basepath/$key/$key\.txt";
+			chromstart:int,
+			chromstop:int\" -t $basepath/$key/$key\.txt";
 		system($execute);
 	} 
 } else {
-	my $execute = "ardea -d $finalpath/chickenvariants -m \"
-		class:char,
-		zygosity:char,
-		dbsnp:char,
-		consequence:char,
-		geneid:char,	
-		genename:char,
-		transcript:char,
-		feature:char,
-		genetype:char,
-		ref:char,
-		alt:char,
-		line:char,
-		tissue:char,
+	my $execute = "ardea -d $finalpath/chickengenes -m \"
 		chrom:char,
-		aachange:char,
-		codon:char,
+		geneid:char,
+		genename:char,
 		species:key,
-		notes:text,
-		quality:double,
+		fpkmstatus:char,
+		tissue:char,
+		line:char,
+		coverage:double,
+		tpm:double,
+		fpkm:double,
+		fpkmlow:double,
+		fpkmhigh:double,
 		library:int,
-		position:int,
-		proteinposition:int\" -t $basepath/$library/$library\.txt";
+		chromstart:int,
+		chromstop:int\" -t $basepath/$library/$library\.txt";
 	system($execute);
 }
 #GETTING ALL THE LIBRARIES FROM THE DATABASE.

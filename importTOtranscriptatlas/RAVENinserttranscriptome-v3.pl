@@ -4,6 +4,7 @@
 
 # CODE FOR 
 use strict;
+use Data::Dumper;
 use File::Basename;
 use DBI;
 use Getopt::Long;
@@ -31,9 +32,9 @@ open(STDERR, '>', "$std_err") or die "Error file doesn't exist";
 #ARGUMENTS
 my($help,$manual,$deletenotdone,$in1);
 GetOptions (	
-                                "delete" 	=> 	\$deletenotdone,
-				"h|help"        =>      \$help,
-                                "man|manual"	=>      \$manual );
+          "delete" 			=> 	\$deletenotdone,
+					"h|help"  		=>  \$help,
+          "man|manual"	=>  \$manual );
 
 # VALIDATE ARGS
 pod2usage( -verbose => 2 )  if ($manual);
@@ -73,6 +74,7 @@ my (@allgeninfo, $mappingtool, $refgenome, $refgenomename, %ALL);
 my ($stranded, $sequences, $annotation, $annotationfile, $annfileversion);
 my (@foldercontent, @VAR, @threads, $queue);
 my (%ARFPKM,%CHFPKM, %BEFPKM, %CFPKM, %DFPKM, %DHFPKM, %DLFPKM, %cfpkm, %dfpkm, %dhfpkm, %dlfpkm, %TPM,%tpm)= ();
+my (%HASHDBVARIANT, %HASHDBVEP, %HASHRESULT, %HASHNEW) ;
 
 #PARSABLE GENOMES FOR ANALYSIS
 my $GENOMES="/home/modupe/.GENOMES/";
@@ -92,11 +94,7 @@ opendir(DIR,$in1) or die "Folder \"$in1\" main doesn't exist\n";
 my @Directory = readdir(DIR);
 close(DIR);
 #pushing each subfolder
-foreach (@Directory){
-  if ($_ =~ /^\w*_\d*$/){
-    push (@NewDirectory, $_);
-  }
-}
+foreach (@Directory){ if ($_ =~ /^\w*_\d*$/){  push (@NewDirectory, $_); } }
 
 # - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 # - - - - - - - - - - - - - - - - M A I N - - - - - - - - - - - - - - - - - - - - - -
@@ -364,6 +362,7 @@ sub GENES_FPKM { #subroutine for getting gene information
 				##change to thread
 				my @fpkmdetails = <FPKM>; close(FPKM);
 				shift @fpkmdetails;
+				undef @VAR; undef @threads;
 				push @VAR, [ splice @fpkmdetails, 0, 200 ] while @fpkmdetails; #sub the files to multiple subs
 
 				$queue = new Thread::Queue();
@@ -383,7 +382,7 @@ sub GENES_FPKM { #subroutine for getting gene information
 				unless ($isoforms == $isoformcount) {
 					unless ($isoformcount == 0 ) {
 						print "NOTICE:\t Removed incomplete records for $_[0] in isoforms_fpkm table\n";
-						$sth = $dbh->prepare("delete from isoforms_fpkm where library_id = '$_[0]'"); $sth->execute();
+						$sth = $dbh->prepare("delete from isoforms_fpkm where library_id = $_[0]"); $sth->execute();
 					}
 					print "NOTICE:\t Importing $diffexpress expression information for $_[0] to isoforms_fpkm table ...";
 					#import into ISOFORMSFPKM table;
@@ -392,11 +391,12 @@ sub GENES_FPKM { #subroutine for getting gene information
 					##change to thread
 					my @fpkmdetails = <FPKM>; close(FPKM);
 					shift @fpkmdetails;
+					undef @VAR; undef @threads;
 					push @VAR, [ splice @fpkmdetails, 0, 200 ] while @fpkmdetails; #sub the files to multiple subs
 	
 					$queue = new Thread::Queue();
 					my $builder=threads->create(\&main); #create thread for each subarray into a thread
-					push @threads, threads->create(\&isoprocessor) for 1..5; #execute 10 threads
+					push @threads, threads->create(\&isoprocessor) for 1..5; #execute 5 threads
 					$builder->join; #join threads
 					foreach (@threads){$_->join;}
 					###
@@ -482,16 +482,17 @@ sub GENES_FPKM { #subroutine for getting gene information
 				unless ($genes == $genecount) {
 					unless ($genecount == 0 ) {
 						print "NOTICE:\t Removed incomplete records for $_[0] in genes_fpkm table\n";
-						$sth = $dbh->prepare("delete from genes_fpkm where library_id = '$_[0]'"); $sth->execute();
+						$sth = $dbh->prepare("delete from genes_fpkm where library_id = $_[0]"); $sth->execute();
 					}
 					print "NOTICE:\t Importing $diffexpress expression information for $_[0] to genes_fpkm table ...";
 					
 					##change to thread
 					my @fpkmdetails = scalar keys %ARFPKM;
+					undef @VAR; undef @threads;
 					push @VAR, [ splice @fpkmdetails, 0, 200 ] while @fpkmdetails; #sub the files to multiple subs
 					$queue = new Thread::Queue();
 					my $builder=threads->create(\&main); #create thread for each subarray into a thread
-					push @threads, threads->create(\&gtfcuffprocessor) for 1..5; #execute 10 threads
+					push @threads, threads->create(\&gtfcuffprocessor) for 1..5; #execute 5 threads
 					$builder->join; #join threads
 					foreach (@threads){$_->join;}
 					
@@ -576,10 +577,11 @@ sub GENES_FPKM { #subroutine for getting gene information
 					
 					##change to thread
 					my @fpkmdetails = scalar keys %ARFPKM;
+					undef @VAR; undef @threads;
 					push @VAR, [ splice @fpkmdetails, 0, 200 ] while @fpkmdetails; #sub the files to multiple subs
 					$queue = new Thread::Queue();
 					my $builder=threads->create(\&main); #create thread for each subarray into a thread
-					push @threads, threads->create(\&strprocessor) for 1..5; #execute 10 threads
+					push @threads, threads->create(\&strprocessor) for 1..5; #execute 5 threads
 					$builder->join; #join threads
 					foreach (@threads){$_->join;}
 
@@ -683,7 +685,8 @@ sub PARSING {
       VARIANTS($lib_id, $accepted, $refgenomename, $annotationfile);
 
       #Finally : the last update. transcripts_summary table updating status column with 'done'
-      $sth = $dbh->prepare("update transcripts_summary set status='done' where library_id = $lib_id");
+      $dbh = mysql();
+			$sth = $dbh->prepare("update transcripts_summary set status='done' where library_id = $lib_id");
       $sth ->execute();
 
       #TRY to implement nosql ###fix
@@ -715,11 +718,12 @@ sub HTSEQ { #importing Htseqcount details to the database
 	  open(HTSEQ, "<$_[0]") or die "Can't open file $_[0]\n"; 
 		##change to thread
 		my @htseqdetails = <HTSEQ>; close(HTSEQ);
+		undef @VAR; undef @threads;
 		push @VAR, [ splice @htseqdetails, 0, 200 ] while @htseqdetails; #sub the files to multiple subs
 		
 		$queue = new Thread::Queue();
 		my $builder=threads->create(\&main); #create thread for each subarray into a thread
-		push @threads, threads->create(\&htseqprocessor) for 1..5; #execute 10 threads
+		push @threads, threads->create(\&htseqprocessor) for 1..5; #execute 5 threads
 		$builder->join; #join threads
 		foreach (@threads){$_->join;}
 	}
@@ -917,6 +921,7 @@ sub DBVARIANTS {
     
 		#VARIANT_RESULTS
 		print "NOTICE:\t Importing $varianttool variant information for $libnumber to variants_result table ...";
+		my $ii = 0;
 		foreach my $abc (sort keys %VCFhash) {
 			foreach my $def (sort {$a <=> $b} keys %{ $VCFhash{$abc} }) {
 				my @vcf = split('\|', $VCFhash{$abc}{$def});
@@ -930,15 +935,33 @@ sub DBVARIANTS {
 				elsif (length $vcf[0] < length $vcf[1]) { $itvariants++; $itindel++; $variantclass = "insertion"; }
 				else { $itvariants++; $itindel++; $variantclass = "deletion"; }
 		
+				#putting variants info into a hash table
+				my @hashdbvariant = ($libnumber, $abc, $def, $vcf[0], $vcf[1], $vcf[2], $variantclass, $vcf[3]); 
+				$HASHDBVARIANT{$ii++} = [@hashdbvariant];
+				
 				#to variant_result
-				$sth = $dbh->prepare("insert into variants_result ( library_id, chrom, position, ref_allele, alt_allele, quality, variant_class, zygosity ) values (?,?,?,?,?,?,?,?)");
-				$sth ->execute($libnumber, $abc, $def, $vcf[0], $vcf[1], $vcf[2], $variantclass, $vcf[3]) or die "\nERROR:\t Complication in variants_result table, consult documentation\n";
+				#$sth = $dbh->prepare("insert into variants_result ( library_id, chrom, position, ref_allele, alt_allele, quality, variant_class, zygosity ) values (?,?,?,?,?,?,?,?)");
+				#$sth ->execute($libnumber, $abc, $def, $vcf[0], $vcf[1], $vcf[2], $variantclass, $vcf[3]) or die "\nERROR:\t Complication in variants_result table, consult documentation\n";
 			}
 		}
 		#update variantsummary with counts
 		$sth = $dbh->prepare("update variants_summary set total_VARIANTS = $itvariants, total_SNPS = $itsnp, total_INDELS = $itindel where library_id= '$libnumber'"); 
 		$sth ->execute() or die "$DBI::errstr Error in updating the Variants Summary table\n";
-		$sth->finish();
+		$sth->finish(); 
+		
+		`date`; 
+		#threads to import variants
+		#print Data::Dumper->Dump( [ \%HASHDBVARIANT ], [ qw(*thehash) ] );
+		my @hashdetails = keys %HASHDBVARIANT; #print "First $#hashdetails\n"; die;
+		undef @VAR; undef @threads;
+		push @VAR, [ splice @hashdetails, 0, 200 ] while @hashdetails; #sub the files to multiple subs
+		$queue = new Thread::Queue();
+		my $builder=threads->create(\&main); #create thread for each subarray into a thread 
+		push @threads, threads->create(\&dbvarprocessor) for 1..5; #execute 5 threads
+		$builder->join; #join threads print "I'm here 2\n";
+		foreach (@threads){$_->join;}
+		`date`;
+		print "Done\n";
 	} else { print "NOTICE: $libnumber Already exists in variants summary table\n"; }
 }
 
@@ -951,7 +974,8 @@ sub VEPVARIANT {
 	undef %extra;
 	undef %DBSNP;
 	$_[1] =~ /^library_(\d*)$/;
-  my $libnumber = $1;
+  print "NOTICE:\t Importing VEP variant annotation for $1 to variants_result table ...";
+	my $libnumber = $1; my $ii = 0;
 	my ($chrom, $position);
 	if($_[0]){ open(VEP,$_[0]) or die ("\nERROR:\t Can not open vep file $_[0]\n"); } else { die ("\nERROR:\t Can not find VEP file. make sure vep file with suffix '.vep.txt' is present\n"); }
 	while (<VEP>) {
@@ -984,12 +1008,20 @@ sub VEPVARIANT {
 					unless ( $VEPhash{$locate} eq $locate ){ die "\nERROR:\t Duplicate annotation in VEP file, consult documentation\n"; }
 				} else {
 					$VEPhash{$locate} = $locate;
-					$sth = $dbh->prepare("insert into variants_annotation ( library_id, chrom, position, consequence, gene_id, gene_name, transcript, feature, gene_type,protein_position, aminoacid_change, codon_change ) values (?,?,?,?,?,?,?,?,?,?,?,?)");
+					#$sth = $dbh->prepare("insert into variants_annotation ( library_id, chrom, position, consequence, gene_id, gene_name, transcript, feature, gene_type,protein_position, aminoacid_change, codon_change ) values (?,?,?,?,?,?,?,?,?,?,?,?)");
 					if (exists $extra{'SYMBOL'}) { $extra{'SYMBOL'} = uc($extra{'SYMBOL'}); } else { $extra{'SYMBOL'} = "NULL"; }
-					$sth ->execute($libnumber, $chrom, $position, $consequence, $geneid, $extra{'SYMBOL'}, $transcriptid, $featuretype, $extra{'BIOTYPE'} , $pposition, $aminoacid, $codons) or die "\nERROR:\t Complication in variants_annotation table, consult documentation\n";
-					$sth = $dbh->prepare("update variants_result set variant_class = '$extra{'VARIANT_CLASS'}' where library_id = '$libnumber' and chrom = '$chrom' and position = $position"); $sth ->execute() or die "\nERROR:\t Complication in updating VarResult table, consult documentation\n";
 					
-					$DBSNP{$chrom}{$position} = $dbsnp; #updating dbsnp	
+					my @hashdbvariant = ($libnumber, $chrom, $position, $consequence, $geneid, $extra{'SYMBOL'}, $transcriptid, $featuretype, $extra{'BIOTYPE'} , $pposition, $aminoacid, $codons);
+					$HASHDBVEP{$ii++} = [@hashdbvariant];
+					print "$ii\t@hashdbvariant\n";
+					#$sth ->execute($libnumber, $chrom, $position, $consequence, $geneid, $extra{'SYMBOL'}, $transcriptid, $featuretype, $extra{'BIOTYPE'} , $pposition, $aminoacid, $codons) or die "\nERROR:\t Complication in variants_annotation table, consult documentation\n";
+					$HASHRESULT{$chrom}{$position} = $extra{'VARIANT_CLASS'};
+					#$HASHRESULT{$kk++} = ($libnumber, $chrom, $position, $extra{'VARIANT_CLASS'});
+					
+					#$sth = $dbh->prepare("update variants_result set variant_class = '$extra{'VARIANT_CLASS'}' where library_id = '$libnumber' and chrom = '$chrom' and position = $position"); $sth ->execute() or die "\nERROR:\t Complication in updating VarResult table, consult documentation\n";
+					
+					$DBSNP{$chrom}{$position} = $dbsnp; #updating dbsnp
+					#$DBSNP{$jj++} = ($libnumber,$chrom,$position,$dbsnp); #updating dbsnp	
 				}
 			}
 		} else {
@@ -1001,11 +1033,59 @@ sub VEPVARIANT {
 			} #getting VEP version
 		}
 	} close VEP; #end of processing vep file
+	print "\n\nTotal number of annotations is $ii\n\n";
+	
+	#adding the dbsnp annotation and variant_class
+	$ii = 0; my @hashdb;
 	foreach my $chrom (sort keys %DBSNP) { #updating existing_variant
 		foreach my $position (sort keys %{ $DBSNP{$chrom} }) {
-			$sth = $dbh->prepare("update variants_result set existing_variant = '$DBSNP{$chrom}{$position}' where library_id = '$libnumber' and chrom = '$chrom' and position = $position"); $sth ->execute();
+			if (exists $HASHRESULT{$chrom}{$position}){
+				@hashdb = ($libnumber,$chrom,$position,$DBSNP{$chrom}{$position},$HASHRESULT{$chrom}{$position});
+				delete $HASHRESULT{$chrom}{$position};
+			} else {
+				@hashdb = ($libnumber,$chrom,$position,$DBSNP{$chrom}{$position},"NULL");
+			}
+			$HASHNEW{$ii++} = [@hashdb];
+			delete $DBSNP{$chrom}{$position};
 		}
 	}
+	foreach my $chrom (sort keys %HASHRESULT) { #updating variant class
+		foreach my $position (sort keys %{ $HASHRESULT{$chrom} }) {
+			if (exists $DBSNP{$chrom}{$position}){
+				@hashdb = ($libnumber,$chrom,$position,$DBSNP{$chrom}{$position},$HASHRESULT{$chrom}{$position});
+				delete $DBSNP{$chrom}{$position};
+			} else {
+				@hashdb = ($libnumber,$chrom,$position,"NULL", $HASHRESULT{$chrom}{$position});
+			}
+			$HASHNEW{$ii++} = [@hashdb];
+			delete $HASHRESULT{$chrom}{$position};
+		}
+	}
+	
+	`date`;
+		#threads to import variantsvep
+		my @hashdetails = keys %HASHDBVEP;
+		undef @VAR; undef @threads;
+		push @VAR, [ splice @hashdetails, 0, 200 ] while @hashdetails; #sub the files to multiple subs
+		$queue = new Thread::Queue();
+		my $builder=threads->create(\&main); #create thread for each subarray into a thread
+		push @threads, threads->create(\&dbvepprocessor) for 1..5; #execute 5 threads
+		$builder->join; #join threads
+		foreach (@threads){$_->join;}
+	`date`;
+		#threads to update dbsnp & EXISTING VARIANT
+		print "done with the vep\n";
+		@hashdetails = keys %HASHNEW;
+		undef @VAR; undef @threads;
+		push @VAR, [ splice @hashdetails, 0, 200 ] while @hashdetails; #sub the files to multiple subs
+		$queue = new Thread::Queue();
+		$builder=threads->create(\&main); #create thread for each subarray into a thread
+		push @threads, threads->create(\&dbdetprocessor) for 1..5; #execute 5 threads
+		$builder->join; #join threads
+		foreach (@threads){$_->join;}
+	`date`;
+	
+	$dbh = mysql();
 	$sth = $dbh->prepare("update variants_summary set status = 'done' where library_id= '$libnumber'"); #set variants_summary status as done
 	$sth ->execute();
 }
@@ -1030,40 +1110,15 @@ sub main {
 	foreach(1..5) { $queue-> enqueue(undef); }
 }
 
-sub cuffprocessor {
-	my $query;
-	while ($query = $queue->dequeue()){
-		geneparseinput(@$query);
-	}
-}
+sub cuffprocessor { my $query; while ($query = $queue->dequeue()){ geneparseinput(@$query); } }
+sub gtfcuffprocessor { my $query; while ($query = $queue->dequeue()){ gtfcuffparseinput(@$query); } }
+sub isoprocessor { my $query; while ($query = $queue->dequeue()){ isoparseinput(@$query); } }
+sub strprocessor { my $query; while ($query = $queue->dequeue()){ strparseinput(@$query); } }
+sub htseqprocessor { my $query; while ($query = $queue->dequeue()){	htseqparseinput(@$query); } }
+sub dbvarprocessor { my $query; while ($query = $queue->dequeue()){ dbvarinput(@$query); } }
+sub dbvepprocessor { my $query; while ($query = $queue->dequeue()){ print @$query,"\n"; dbvepinput(@$query); } }
+sub dbdetprocessor { my $query; while ($query = $queue->dequeue()){ dbdetinput(@$query); } }
 
-sub gtfcuffprocessor {
-	my $query;
-	while ($query = $queue->dequeue()){
-		gtfcuffparseinput(@$query);
-	}
-}
-
-sub isoprocessor {
-	my $query;
-	while ($query = $queue->dequeue()){
-		isoparseinput(@$query);
-	}
-}
-
-sub strprocessor {
-	my $query;
-	while ($query = $queue->dequeue()){
-		strparseinput(@$query);
-	}
-}
-
-sub htseqprocessor {
-	my $query;
-	while ($query = $queue->dequeue()){
-		htseqparseinput(@$query);
-	}
-}
 sub gtfcuffparseinput {
 	$syntax = "insert into genes_fpkm (library_id, gene_id, chrom_no, chrom_start, chrom_stop, coverage, fpkm, fpkm_conf_low, fpkm_conf_high ) values (?,?,?,?,?,?,?,?,?)";
 	foreach my $a (@_) {
@@ -1089,7 +1144,6 @@ sub geneparseinput{
 		}
 	}
 }
-
 sub strparseinput{
 	$syntax = "insert into genes_fpkm (library_id, gene_id, gene_short_name, chromnumber, chromstart, chromstop, coverage, fpkm, tpm ) values (?,?,?,?,?,?,?,?,?)";
 	foreach my $a (@_) {
@@ -1100,7 +1154,6 @@ sub strparseinput{
 		$sth->finish;
 	}
 }
-
 sub isoparseinput{
 	$syntax = "insert into isoforms_fpkm (library_id, tracking_id, gene_id, gene_short_name, chrom_no, chrom_start, chrom_stop, coverage, fpkm, fpkm_conf_low, fpkm_conf_high, fpkm_status ) values (?,?,?,?,?,?,?,?,?,?,?,?)";
   foreach (@_){
@@ -1127,6 +1180,31 @@ sub htseqparseinput {
 	    $sth->execute($lib_id, $NAME, $VALUE);
 	  }
 		$sth->finish;
+	}
+}
+sub dbvarinput {
+	$syntax = "insert into variants_result ( library_id, chrom, position, ref_allele, alt_allele, quality, variant_class, zygosity ) values (?,?,?,?,?,?,?,?)";
+	foreach my $a (@_) { 
+		$dbh = mysql();
+		$sth = $dbh->prepare($syntax);
+		$sth -> execute(@{$HASHDBVARIANT{$a}}) or print "\nERROR:\t Complication in variants_result table, consult documentation\n";
+	}
+}
+sub dbvepinput {
+	$syntax = "insert into variants_annotation ( library_id, chrom, position, consequence, gene_id, gene_name, transcript, feature, gene_type,protein_position, aminoacid_change, codon_change ) values (?,?,?,?,?,?,?,?,?,?,?,?)";
+	foreach my $a (@_) {
+		$dbh = mysql();
+		$sth = $dbh->prepare($syntax);
+		#print "==> $a\t", @{$HASHDBVEP{$a}},"\n\n";
+		$sth -> execute(@{$HASHDBVEP{$a}}) or print "\nERROR:\t Complication in variants_annotation table, consult documentation\n";
+	}
+}
+sub dbdetinput {
+	foreach my $a (@_) {
+		$dbh = mysql();
+		my ($liz, $chz, $poz, $dbz, $exz) = @{$HASHNEW{$a}};
+		$sth = $dbh->prepare("update variants_result set existing_variant = '$dbz', variant_class = '$exz' where library_id = '$liz' and chrom = '$chz' and position = $poz");
+		$sth ->execute() or print "\nERROR:\t Complication in updating variants_result table, consult documentation\n";
 	}
 }
 
